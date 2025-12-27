@@ -1,0 +1,2 @@
+# Shared dependencies for the project
+# Add your dependencies here (MediaPipe, PyTorch, etc.)

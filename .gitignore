@@ -1,0 +1,26 @@
+# Virtual environments
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Large datasets
+*.zip
+*.tar.gz
+data/
+datasets/
+
+# Model checkpoints
+*.pth
+*.pt
+*.h5
+*.ckpt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
