@@ -1,2 +1,10 @@
 # Shared dependencies for the project
 # Add your dependencies here (MediaPipe, PyTorch, etc.)
+torch
+torchvision
+opencv-python
+pillow
+numpy
+tqdm
+mediapipe==0.10.11 
+opencv-python
