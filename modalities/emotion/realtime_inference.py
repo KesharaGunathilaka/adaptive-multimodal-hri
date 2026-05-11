@@ -11,8 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load model
 model = get_model()
-model.load_state_dict(torch.load(
-    "checkpoints/best_model.pth", map_location=device))
+model.load_state_dict(torch.load("checkpoints/model_v1.pth", map_location=device))
 model.to(device)
 model.eval()
 
@@ -39,7 +38,7 @@ while True:
             bw = int(bbox.width * w)
             bh = int(bbox.height * h)
 
-            face = frame[y:y+bh, x:x+bw]
+            face = frame[y : y + bh, x : x + bw]
 
             if face.size != 0:
                 face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
@@ -55,15 +54,21 @@ while True:
                 confidence = conf.item() * 100
 
                 text = f"{label}: {confidence:.2f}%"
-                cv2.putText(frame, text, (x, y-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                            (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    text,
+                    (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2,
+                )
 
-                cv2.rectangle(frame, (x, y), (x+bw, y+bh), (0, 255, 0), 2)
+                cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
 
     cv2.imshow("Emotion Recognition", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
 cap.release()
