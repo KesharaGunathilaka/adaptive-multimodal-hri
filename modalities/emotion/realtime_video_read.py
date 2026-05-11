@@ -9,22 +9,47 @@ from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load model
+# -----------------------------
+# LOAD MODEL
+# -----------------------------
 model = get_model()
+
 model.load_state_dict(torch.load("checkpoints/model_v1.pth", map_location=device))
+
 model.to(device)
 model.eval()
 
 transform = get_test_transforms()
 
-# MediaPipe Face Detection
+# -----------------------------
+# MEDIAPIPE FACE DETECTION
+# -----------------------------
 mp_face = mp.solutions.face_detection
+
 face_detection = mp_face.FaceDetection(model_selection=0)
 
-cap = cv2.VideoCapture(0)
+# -----------------------------
+# LOAD VIDEO
+# -----------------------------
+VIDEO_PATH = "videos/C1_D1_I1.mp4"
 
+cap = cv2.VideoCapture(VIDEO_PATH)
+
+if not cap.isOpened():
+    print("Error opening video file")
+    exit()
+
+# -----------------------------
+# PROCESS VIDEO
+# -----------------------------
 while True:
     ret, frame = cap.read()
+
+    # End of video
+    if not ret:
+        print("Video finished")
+        break
+
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     results = face_detection.process(rgb)
@@ -32,28 +57,41 @@ while True:
     if results.detections:
         for detection in results.detections:
             bbox = detection.location_data.relative_bounding_box
+
             h, w, _ = frame.shape
+
             x = int(bbox.xmin * w)
             y = int(bbox.ymin * h)
+
             bw = int(bbox.width * w)
             bh = int(bbox.height * h)
+
+            # Prevent negative coordinates
+            x = max(0, x)
+            y = max(0, y)
 
             face = frame[y : y + bh, x : x + bw]
 
             if face.size != 0:
-                face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-                face = Image.fromarray(face)
-                face = transform(face).unsqueeze(0).to(device)
+                face_rgb = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+
+                face_pil = Image.fromarray(face_rgb)
+
+                face_tensor = transform(face_pil).unsqueeze(0).to(device)
 
                 with torch.no_grad():
-                    outputs = model(face)
+                    outputs = model(face_tensor)
+
                     probs = F.softmax(outputs, dim=1)
+
                     conf, pred = torch.max(probs, 1)
 
                 label = EMOTION_LABELS[pred.item()]
+
                 confidence = conf.item() * 100
 
                 text = f"{label}: {confidence:.2f}%"
+
                 cv2.putText(
                     frame,
                     text,
@@ -68,7 +106,8 @@ while True:
 
     cv2.imshow("Emotion Recognition", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    # Adjust playback speed
+    if cv2.waitKey(30) & 0xFF == ord("q"):
         break
 
 cap.release()

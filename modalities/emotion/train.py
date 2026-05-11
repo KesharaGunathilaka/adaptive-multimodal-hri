@@ -32,7 +32,7 @@ for epoch in range(EPOCHS):
     running_loss = 0
 
     # Create a progress bar for the training loader
-    train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Train]")
+    train_pbar = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{EPOCHS} [Train]")
 
     for images, labels in train_pbar:
         images, labels = images.to(device), labels.to(device)
@@ -46,7 +46,7 @@ for epoch in range(EPOCHS):
         running_loss += loss.item()
 
         # Update the progress bar with current loss
-        train_pbar.set_postfix({'loss': f"{loss.item():.4f}"})
+        train_pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
     # Validation
     model.eval()
@@ -54,7 +54,7 @@ for epoch in range(EPOCHS):
     total = 0
 
     # Create a progress bar for the test loader
-    val_pbar = tqdm(test_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Val]")
+    val_pbar = tqdm(test_loader, desc=f"Epoch {epoch + 1}/{EPOCHS} [Val]")
 
     with torch.no_grad():
         for images, labels in val_pbar:
@@ -66,13 +66,13 @@ for epoch in range(EPOCHS):
             correct += (predicted == labels).sum().item()
 
             # Update the progress bar with current accuracy
-            val_pbar.set_postfix({'acc': f"{100 * correct / total:.2f}%"})
+            val_pbar.set_postfix({"acc": f"{100 * correct / total:.2f}%"})
 
     acc = 100 * correct / total
-    print(f"Epoch {epoch+1}, Loss: {running_loss:.4f}, Val Acc: {acc:.2f}%")
+    print(f"Epoch {epoch + 1}, Loss: {running_loss:.4f}, Val Acc: {acc:.2f}%")
 
     if acc > best_acc:
         best_acc = acc
-        torch.save(model.state_dict(), "checkpoints/best_model.pth")
+        torch.save(model.state_dict(), "checkpoints/model_v1.pth")
 
 print("Training Complete")
