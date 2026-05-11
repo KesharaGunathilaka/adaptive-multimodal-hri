@@ -7,4 +7,3 @@ pillow
 numpy
 tqdm
 mediapipe==0.10.11 
-opencv-python
