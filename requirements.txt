@@ -7,3 +7,7 @@ pillow
 numpy
 tqdm
 mediapipe==0.10.11 
+scikit-learn
+matplotlib
+seaborn
+pandas
