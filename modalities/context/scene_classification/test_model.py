@@ -1,8 +1,3 @@
-"""
-Diagnostic script to test if the scene classification model is trained correctly.
-This script tests the model on validation data to ensure it's learning different classes.
-"""
-
 from pathlib import Path
 import sys
 
