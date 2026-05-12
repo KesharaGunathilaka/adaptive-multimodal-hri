@@ -6,7 +6,7 @@ opencv-python
 pillow
 numpy
 tqdm
-mediapipe==0.10.11 
+mediapipe==0.10.35 
 scikit-learn
 matplotlib
 seaborn

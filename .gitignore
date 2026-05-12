@@ -25,3 +25,5 @@ datasets/
 # OS
 .DS_Store
 Thumbs.db
+
+videos/
