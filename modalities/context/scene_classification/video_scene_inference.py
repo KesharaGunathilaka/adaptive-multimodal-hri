@@ -16,10 +16,6 @@ from modalities.context.scene_classification.scene_model import SceneModel
 # =========================
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Select video - Options:
-# 1. Use webcam (uncomment below)
-# VIDEO_PATH = 0  # 0 = default webcam
-# 2. Use video file (update path to existing video)
 VIDEO_PATH = "../../../videos/c1/20260511_160401.mp4"
 
 # IMPORTANT:
