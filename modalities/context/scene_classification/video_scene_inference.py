@@ -6,9 +6,9 @@ from torchvision import transforms
 import io
 
 # Set UTF-8 encoding for stdout
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 # Ensure repo-root imports work
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -17,9 +17,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from modalities.context.scene_classification.scene_model import SceneModel
 
-# =========================
+
 # CONFIG
-# =========================
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Video test folder
@@ -31,9 +30,8 @@ classes = ["classroom", "kitchen", "office"]
 # Video extensions to process
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
 
-# =========================
+
 # LOAD MODEL
-# =========================
 weights_path = Path(__file__).resolve().parent / "scene_model" / "scene.pth"
 
 model = SceneModel(num_classes=3).to(DEVICE)
@@ -48,9 +46,8 @@ model.eval()
 
 print(f"✓ Model loaded on {DEVICE}\n")
 
-# =========================
+
 # TRANSFORMS
-# =========================
 transform = transforms.Compose(
     [
         transforms.ToPILImage(),
@@ -63,9 +60,8 @@ transform = transforms.Compose(
     ]
 )
 
-# =========================
+
 # FIND ALL VIDEOS
-# =========================
 print(f"Searching for videos in: {VIDEOS_TEST_DIR}\n")
 
 if not VIDEOS_TEST_DIR.exists():
@@ -92,9 +88,8 @@ print(f"\n{'-' * 70}")
 print("Instructions: Press 'n' for next video, 'q' to quit")
 print(f"{'-' * 70}\n")
 
-# =========================
+
 # PLAY VIDEOS WITH PREDICTIONS
-# =========================
 for video_idx, video_path in enumerate(video_files, 1):
     print(f"\n[{video_idx}/{len(video_files)}] {video_path.name}")
     print(f"{'=' * 70}")
