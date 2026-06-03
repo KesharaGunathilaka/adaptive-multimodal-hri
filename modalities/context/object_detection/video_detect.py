@@ -319,6 +319,12 @@ def process_video(video_path: str, show_preview: bool = True):
     output_dir = _THIS_DIR / cfg.OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Set up video writer for output
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    output_video_path = output_dir / "object_detection_output.mp4"
+    out = cv2.VideoWriter(str(output_video_path), fourcc, fps, (w, h))
+    print(f"  Output Video: {output_video_path}")
+
     frame_results = []
     frame_idx = 0
     t_start = time.time()
@@ -363,6 +369,8 @@ def process_video(video_path: str, show_preview: bool = True):
         # Live preview
         if show_preview:
             vis = draw_detections(frame.copy(), result, frame_idx, total_frames, fps)
+            # Write frame to output video
+            out.write(vis)
             # Resize for display if very large
             disp_w = min(w, 960)
             if disp_w < w:
@@ -374,6 +382,7 @@ def process_video(video_path: str, show_preview: bool = True):
                 break
 
     cap.release()
+    out.release()
     if show_preview:
         cv2.destroyAllWindows()
 
@@ -382,6 +391,7 @@ def process_video(video_path: str, show_preview: bool = True):
 
     # ── Save outputs ──
     print(f"\n  Saving outputs to: {output_dir}/")
+    print(f"  ✓ Video saved: {output_video_path}")
 
     json_path = output_dir / cfg.JSON_OUTPUT_FILE
     save_json_results(frame_results, video_info, json_path)

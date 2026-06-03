@@ -16,7 +16,11 @@ from modalities.context.scene_classification.scene_model import SceneModel
 # =========================
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-VIDEO_PATH = "../../../videos/c1/20260511_160401.mp4"
+# VIDEO_PATH = "../../../videos/c1/20260511_160401.mp4"
+
+# VIDEO_PATH = "../../../videos/c1/0042.mp4"
+# VIDEO_PATH = "../../../videos/k1/20260509_190437.mp4"
+VIDEO_PATH = "../../../videos/k5/20260510_001118.mp4"
 
 # IMPORTANT:
 # Must match dataset.class_to_idx from training
@@ -77,6 +81,23 @@ if not cap.isOpened():
 else:
     print("✓ Video file opened successfully!")
 
+# Set up video writer for output
+fps = cap.get(cv2.CAP_PROP_FPS)
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# Create output directory if it doesn't exist
+output_dir = Path(__file__).resolve().parent / "outputs"
+output_dir.mkdir(parents=True, exist_ok=True)
+
+output_path = output_dir / "scene_inference_output.mp4"
+
+# Initialize VideoWriter with H.264 codec
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+out = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
+
+print(f"Saving output to: {output_path}")
+print(f"Video properties: {width}x{height} @ {fps} fps")
 print("Press 'q' or ESC to quit.")
 
 # =========================
@@ -123,6 +144,9 @@ while cap.isOpened():
         2,
     )
 
+    # Write frame to output video
+    out.write(frame)
+
     # Show window
     cv2.imshow("Scene Detection - Video", frame)
 
@@ -136,4 +160,6 @@ while cap.isOpened():
 # CLEANUP
 # =========================
 cap.release()
+out.release()
 cv2.destroyAllWindows()
+print(f"\n✓ Video saved successfully to: {output_path}")

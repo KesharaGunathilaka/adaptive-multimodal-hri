@@ -6,6 +6,8 @@ from utils.transforms import get_test_transforms
 from config import EMOTION_LABELS
 import mediapipe as mp
 from PIL import Image
+import pyrealsense2 as rs
+import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -19,12 +21,45 @@ transform = get_test_transforms()
 
 # MediaPipe Face Detection
 mp_face = mp.solutions.face_detection
-face_detection = mp_face.FaceDetection(model_selection=0)
+face_detection = mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.5)
 
-cap = cv2.VideoCapture(0)
+# Initialize Intel RealSense Camera
+pipeline = rs.pipeline()
+config = rs.config()
+
+# Get device product line for setting a supporting resolution
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device_product_line = str(
+    pipeline_profile.get_device().get_info(rs.camera_info.product_line)
+)
+
+# Configure streams: RGB and Depth
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+
+# Start the pipeline
+pipeline.start(config)
+
+# Create alignment object to align depth frames to color frames
+align = rs.align(rs.stream.color)
 
 while True:
-    ret, frame = cap.read()
+    # Get frames from RealSense camera
+    frames = pipeline.wait_for_frames()
+
+    # Align depth frame to color frame
+    aligned_frames = align.process(frames)
+    color_frame = aligned_frames.get_color_frame()
+    depth_frame = aligned_frames.get_depth_frame()
+
+    if not color_frame or not depth_frame:
+        continue
+
+    # Convert images to numpy arrays
+    frame = np.asarray(color_frame.get_data())
+    depth_data = np.asarray(depth_frame.get_data())
+
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     results = face_detection.process(rgb)
@@ -37,6 +72,24 @@ while True:
             y = int(bbox.ymin * h)
             bw = int(bbox.width * w)
             bh = int(bbox.height * h)
+
+            # Add padding around the face (40% on each side).
+            # MediaPipe's bbox is tight around the face oval, but the
+            # RAF-DB training images include forehead, chin, ears, and
+            # some background. Without this padding the model receives
+            # an out-of-distribution crop and predicts wrong emotions.
+            pad_w = int(bw * 0.4)
+            pad_h = int(bh * 0.4)
+            x = x - pad_w
+            y = y - pad_h
+            bw = bw + 2 * pad_w
+            bh = bh + 2 * pad_h
+
+            # Clamp coordinates to frame boundaries
+            x = max(0, x)
+            y = max(0, y)
+            bw = min(bw, w - x)
+            bh = min(bh, h - y)
 
             face = frame[y : y + bh, x : x + bw]
 
@@ -66,10 +119,10 @@ while True:
 
                 cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
 
-    cv2.imshow("Emotion Recognition", frame)
+    cv2.imshow("Emotion Recognition (RealSense)", frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
-cap.release()
+pipeline.stop()
 cv2.destroyAllWindows()

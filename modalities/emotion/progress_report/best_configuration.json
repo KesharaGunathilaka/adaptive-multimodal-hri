@@ -1,0 +1,10 @@
+{
+  "learning_rate": 0.0005,
+  "batch_size": 64,
+  "optimizer": "adam",
+  "accuracy": "86.11%",
+  "precision": "86.03%",
+  "recall": "86.11%",
+  "f1_score": "85.96%",
+  "best_epoch": 5
+}
