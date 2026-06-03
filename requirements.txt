@@ -13,3 +13,4 @@ seaborn
 pandas
 ultralytics
 pyrealsense2>=2.54.0
+optuna # For hyperparameter tuning in the scene classification module
