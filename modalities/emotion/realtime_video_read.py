@@ -87,12 +87,13 @@ def align_face(image, left_eye, right_eye):
 # LOAD VIDEO
 # -----------------------------
 
-VIDEO_PATH = "../../videos/c1/0042.mp4"
-# VIDEO_PATH = "../../videos/k1/20260509_190437.mp4"
-# VIDEO_PATH = "../../videos/k2/20260509_202721.mp4"
-# VIDEO_PATH = "../../videos/k3/20260510_003503.mp4"
-# VIDEO_PATH = "../../videos/k4/20260509_225918.mp4"
-# VIDEO_PATH = "../../videos/k5/20260510_001118.mp4"
+VIDEO_PATH = "../../videos/test/C1_D2_T2.mp4"
+# VIDEO_PATH = "../../videos/test/20260509_190437.mp4"
+# VIDEO_PATH = "../../videos/test/20260509_225918.mp4"
+# VIDEO_PATH = "../../videos/test/20260509_202836.mp4"
+# VIDEO_PATH = "../../videos/test/20260511_160444.mp4"
+# VIDEO_PATH = "../../videos/test/20260527_180910.mp4"
+# VIDEO_PATH = "../../videos/Classroom/12/20260613_125529.mp4"
 
 cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -254,4 +255,4 @@ while True:
 cap.release()
 out.release()
 cv2.destroyAllWindows()
-print(f"\n✓ Video saved successfully to: {output_path}")
+print(f"\nVideo saved successfully to: {output_path}")
