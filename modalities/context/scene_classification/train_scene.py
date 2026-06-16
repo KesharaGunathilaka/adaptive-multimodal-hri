@@ -5,6 +5,13 @@ For tune Parameters and train the model run tune_and_train.py"""
 from pathlib import Path
 import sys
 
+# Windows consoles default to cp1252, which can't encode the checkmarks printed
+# below; force UTF-8 so training doesn't crash mid-run on a print statement.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):
+    pass
+
 import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
@@ -12,7 +19,7 @@ import torch.optim as optim
 import torch.nn as nn
 from tqdm.auto import tqdm
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -43,7 +50,7 @@ base_dir = Path(__file__).resolve().parent
 dataset_base = base_dir.parent / "data" / "scene"
 train_dir = dataset_base / "train"
 val_dir = dataset_base / "val"
-weights_path = base_dir.parent / "scene_model" / "scene.pth"
+weights_path = base_dir / "scene_model" / "scene.pth"
 
 # Load train and validation datasets
 print("Loading datasets...")
@@ -56,11 +63,20 @@ print(f"Validation samples: {len(val_dataset)}")
 print(f"Classes: {train_dataset.classes}")
 print(f"Class to index mapping: {train_dataset.class_to_idx}")
 
+# Persist the exact class order alongside the weights so inference never has to
+# guess it. SceneClassifier reads this classes.json if present.
+import json
+
+weights_path.parent.mkdir(parents=True, exist_ok=True)
+(weights_path.parent / "classes.json").write_text(
+    json.dumps(train_dataset.classes), encoding="utf-8"
+)
+
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-# Model setup (Updated to 3 classes for the target environments)
-model = SceneModel(num_classes=3).cuda()
+# Model setup (number of classes derived from the dataset folders)
+model = SceneModel(num_classes=len(train_dataset.classes)).cuda()
 loss_fn = nn.CrossEntropyLoss()
 
 # STAGE 1: WARM-UP (Train final layer only)

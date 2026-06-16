@@ -1,9 +1,8 @@
-from pathlib import Path
-import sys
 import cv2
-import torch
-from torchvision import transforms
+import sys
 import io
+from pathlib import Path
+from ultralytics import YOLO
 
 # Set UTF-8 encoding for stdout
 if sys.platform == "win32":
@@ -15,51 +14,21 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from modalities.context.scene_classification.scene_model import SceneModel
-
-
-# CONFIG
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
 # Video test folder
 VIDEOS_TEST_DIR = Path(__file__).resolve().parents[3] / "videos" / "test"
-
-# IMPORTANT: Must match dataset.class_to_idx from training (alphabetical)
-classes = ["classroom", "kitchen"]
 
 # Video extensions to process
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
 
-
 # LOAD MODEL
-weights_path = Path(__file__).resolve().parent / "scene_model" / "scene.pth"
-
-model = SceneModel(num_classes=len(classes)).to(DEVICE)
+weights_path = Path(__file__).resolve().parent / "yolo11n.pt"
 
 if not weights_path.exists():
-    raise FileNotFoundError(f"Model weights not found: {weights_path}")
+    print(f"✗ Model weights not found at: {weights_path}")
+    sys.exit(1)
 
-model.load_state_dict(
-    torch.load(str(weights_path), map_location=DEVICE, weights_only=True)
-)
-model.eval()
-
-print(f"✓ Model loaded on {DEVICE}\n")
-
-
-# TRANSFORMS
-transform = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-    ]
-)
-
+model = YOLO(str(weights_path))
+print(f"✓ Model loaded\n")
 
 # FIND ALL VIDEOS
 print(f"Searching for videos in: {VIDEOS_TEST_DIR}\n")
@@ -89,7 +58,7 @@ print("Instructions: Press 'n' for next video, 'q' to quit")
 print(f"{'-' * 70}\n")
 
 
-# PLAY VIDEOS WITH PREDICTIONS
+# PROCESS VIDEOS WITH PREDICTIONS
 for video_idx, video_path in enumerate(video_files, 1):
     print(f"\n[{video_idx}/{len(video_files)}] {video_path.name}")
     print(f"{'=' * 70}")
@@ -119,30 +88,14 @@ for video_idx, video_path in enumerate(video_files, 1):
 
         frame_count += 1
 
-        # Convert BGR -> RGB
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Run inference
+        results = model.predict(source=frame, conf=0.5, verbose=False)
 
-        # Preprocess
-        img = transform(frame_rgb).unsqueeze(0).to(DEVICE)
-
-        # Inference
-        with torch.no_grad():
-            output = model(img)
-            probs = torch.softmax(output, dim=1)
-            pred = torch.argmax(probs, dim=1).item()
-            confidence = probs[0, pred].item()
-
-        # Get label
-        label = classes[pred]
-
-        # Display on frame
-        color = (0, 255, 0) if confidence > 0.8 else (0, 165, 255)
-        text = f"{label}: {confidence:.1%}"
-
-        cv2.putText(frame, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
+        # Annotate frame
+        annotated_frame = results[0].plot()
 
         # Show frame
-        cv2.imshow("Scene Detection - Live", frame)
+        cv2.imshow("Object Detection - Live", annotated_frame)
 
         # Handle key press
         key = cv2.waitKey(int(1000 / fps)) & 0xFF

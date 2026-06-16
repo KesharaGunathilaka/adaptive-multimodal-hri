@@ -1,71 +1,60 @@
 from pathlib import Path
 import sys
+import time
 
 import cv2
-import torch
-from torchvision import transforms
 
 # Ensure repo-root imports work no matter where this script is launched from.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from modalities.context.scene_classification.scene_model import SceneModel
+from modalities.context.scene_classification.scene_classifier import SceneClassifier
 
-# Config
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+classifier = SceneClassifier()
+print(f"Scene classifier ready on {classifier.device}. Classes: {classifier.classes}")
 
-classes = ["classroom", "office", "kitchen"]
-
-# Load model
-weights_path = Path(__file__).resolve().parent / "scene_model" / "scene.pth"
-
-model = SceneModel(num_classes=3).to(DEVICE)
-if not weights_path.exists():
-    raise FileNotFoundError(f"Model weights not found: {weights_path}")
-
-model.load_state_dict(torch.load(str(weights_path), map_location=DEVICE))
-model.eval()
-
-# Transform - must match training
-transform = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
-)
-
-# Webcam
 cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("Error: Cannot open webcam.")
+    sys.exit(1)
+
+prev_time = time.time()
+fps = 0.0
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Convert BGR to RGB for proper color channel ordering
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    result = classifier.predict(frame)
 
-    img = transform(frame_rgb).unsqueeze(0).to(DEVICE)
+    now = time.time()
+    dt = now - prev_time
+    prev_time = now
+    if dt > 0:
+        fps = 0.9 * fps + 0.1 * (1.0 / dt)
 
-    with torch.no_grad():
-        output = model(img)
-        probs = torch.softmax(output, dim=1)
-        pred = torch.argmax(probs, 1).item()
+    label = result["label"]
+    confidence = result["confidence"] * 100
+    color = (0, 255, 0) if label != "uncertain" else (0, 165, 255)
 
-    label = classes[pred]
-    confidence = probs[0, pred].item() * 100
-
-    # Display
     cv2.putText(
         frame,
         f"Scene: {label} ({confidence:.1f}%)",
         (20, 40),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
-        (0, 255, 0),
+        color,
+        2,
+    )
+    cv2.putText(
+        frame,
+        f"{fps:.1f} FPS",
+        (frame.shape[1] - 110, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (0, 255, 255),
         2,
     )
 

@@ -4,8 +4,8 @@ from torchvision import models
 
 class SceneModel(nn.Module):
     def __init__(
-        self, num_classes=3
-    ):  # adjusted to 3 classes for the target environments
+        self, num_classes=2
+    ):  # target environments: classroom, kitchen
         super(SceneModel, self).__init__()
 
         # EfficientNet-B0 is the optimal balance of accuracy and edge speed.

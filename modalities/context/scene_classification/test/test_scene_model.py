@@ -83,7 +83,7 @@ try:
 
     # Load model
     print("\n[2] Loading model...")
-    model = SceneModel(num_classes=3).to(DEVICE)
+    model = SceneModel(num_classes=len(test_dataset.classes)).to(DEVICE)
 
     if not weights_path.exists():
         print(f"✗ ERROR: Model weights not found at {weights_path}")
