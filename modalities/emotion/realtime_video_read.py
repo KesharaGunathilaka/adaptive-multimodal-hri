@@ -15,7 +15,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # -----------------------------
 model = get_model()
 
-model.load_state_dict(torch.load("checkpoints/model_v1.pth", map_location=device))
+model.load_state_dict(torch.load("checkpoints/best_model.pth", map_location=device))
 
 model.to(device)
 model.eval()
