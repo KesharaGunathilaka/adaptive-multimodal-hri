@@ -33,6 +33,11 @@ EMOTION_LABELS = [
     "Neutral",   # folder 7
 ]
 
+# RAF-DB train-set counts per class (same order as EMOTION_LABELS). Used at
+# inference to re-inject the natural class prior that inverse-frequency
+# class-weighted training removes (see src/postprocess.py).
+TRAIN_CLASS_COUNTS = [1290, 281, 717, 4772, 1982, 705, 2524]
+
 # ── Default hyper-parameters ─────────────────────────────────────────────
 # Tuned for a high-VRAM GPU; lower BATCH_SIZE / NUM_WORKERS for small cards.
 BATCH_SIZE = 64
@@ -55,4 +60,7 @@ NORM_STD = [0.229, 0.224, 0.225]
 SIZE_BUDGET_MB = 20.0
 
 # Default architecture used by train / evaluate / inference when unspecified.
-DEFAULT_MODEL = "EfficientNet-B0"
+# MobileNetV2 (plain recipe) is the deployed model: it keeps the natural class
+# prior, so it generalizes better to live video than the class-weighted
+# EfficientNet-B0, and it's smaller (8.8 MB). See README "Pretrained model".
+DEFAULT_MODEL = "MobileNetV2"

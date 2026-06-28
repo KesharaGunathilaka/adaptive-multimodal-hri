@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import CHECKPOINT_DIR
 
 REPO = "KesharaGunathilaka/adaptive-multimodal-hri"
-ASSET = "best_EfficientNet_B0.pth"
+ASSET = "best_MobileNetV2.pth"
 # GitHub serves the latest release's asset at a stable URL:
 #   https://github.com/<owner>/<repo>/releases/latest/download/<asset>
 # and a specific version at:

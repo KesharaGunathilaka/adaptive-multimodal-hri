@@ -30,6 +30,7 @@ from PIL import Image
 from config import CHECKPOINT_DIR, DEFAULT_MODEL, EMOTION_LABELS, ROOT
 from src.engine import get_device
 from src.models import ALL_MODELS, safe_name
+from src.postprocess import build_logit_bias, parse_class_bias
 from src.transforms import get_test_transforms
 
 MAX_FRAME_WIDTH = 640
@@ -91,7 +92,8 @@ def _draw_overlay(frame, paused):
         cv2.putText(frame, text, (cx, cy), font, scale, (0, 220, 255), thick, cv2.LINE_AA)
 
 
-def process_video(video_path, out_path, model, transform, face_detection, device, show):
+def process_video(video_path, out_path, model, transform, face_detection, device, show,
+                  logit_bias=0.0, padding=0.4, use_clahe=True, use_tta=True, use_align=True):
     """Process one video.
 
     Returns one of: "done" | "next" | "prev" | "quit"
@@ -128,25 +130,29 @@ def process_video(video_path, out_path, model, transform, face_detection, device
                     kp = det.location_data.relative_keypoints
                     right_eye = (int(kp[0].x * w), int(kp[0].y * h))
                     left_eye  = (int(kp[1].x * w), int(kp[1].y * h))
-                    aligned = align_face(frame, left_eye, right_eye)
+                    aligned = align_face(frame, left_eye, right_eye) if use_align else frame
 
-                    pad_w, pad_h = int(bw * 0.4), int(bh * 0.4)
+                    pad_w, pad_h = int(bw * padding), int(bh * padding)
                     x1, y1 = max(0, x - pad_w), max(0, y - pad_h)
                     x2, y2 = min(w, x + bw + pad_w), min(h, y + bh + pad_h)
                     face = aligned[y1:y2, x1:x2]
                     if face.size == 0:
                         continue
 
-                    lab = cv2.cvtColor(face, cv2.COLOR_BGR2LAB)
-                    l_ch, a_ch, b_ch = cv2.split(lab)
-                    face = cv2.cvtColor(cv2.merge((_clahe.apply(l_ch), a_ch, b_ch)), cv2.COLOR_LAB2BGR)
+                    if use_clahe:
+                        lab = cv2.cvtColor(face, cv2.COLOR_BGR2LAB)
+                        l_ch, a_ch, b_ch = cv2.split(lab)
+                        face = cv2.cvtColor(cv2.merge((_clahe.apply(l_ch), a_ch, b_ch)), cv2.COLOR_LAB2BGR)
                     pil = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
 
-                    t      = transform(pil).unsqueeze(0).to(device)
-                    t_flip = transform(pil.transpose(Image.Transpose.FLIP_LEFT_RIGHT)).unsqueeze(0).to(device)
+                    t = transform(pil).unsqueeze(0).to(device)
                     with torch.no_grad():
-                        logits = (model(t) + model(t_flip)) / 2.0
-                        top = torch.max(F.softmax(logits, dim=1), dim=1)
+                        if use_tta:
+                            t_flip = transform(pil.transpose(Image.Transpose.FLIP_LEFT_RIGHT)).unsqueeze(0).to(device)
+                            logits = (model(t) + model(t_flip)) / 2.0
+                        else:
+                            logits = model(t)
+                        top = torch.max(F.softmax(logits + logit_bias, dim=1), dim=1)
                         conf, pred = top.values, top.indices
                     lbl = f"{EMOTION_LABELS[pred.item()]}: {conf.item()*100:.1f}%"
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -191,6 +197,18 @@ def main():
                     help="Do not open a preview window (always true in batch mode).")
     ap.add_argument("--skip-existing", action="store_true",
                     help="Skip videos whose output file already exists.")
+    # Surprise-bias mitigation + preprocessing A/B knobs:
+    ap.add_argument("--prior-correction", type=float, default=0.0,
+                    help="Re-inject natural class prior (T*log prior). Try 0.5-1.0 "
+                         "to cut Surprise over-prediction.")
+    ap.add_argument("--class-bias", default=None,
+                    help="Manual per-class logit offsets, e.g. '-1,0,0,0,0,0,0.5' "
+                         f"(order: {', '.join(EMOTION_LABELS)}).")
+    ap.add_argument("--padding", type=float, default=0.4,
+                    help="Crop padding fraction per side (A/B: try 0.0-0.4).")
+    ap.add_argument("--no-clahe", action="store_true", help="Disable CLAHE (A/B test).")
+    ap.add_argument("--no-tta", action="store_true", help="Disable flip test-time augmentation.")
+    ap.add_argument("--no-align", action="store_true", help="Disable eye-based face alignment.")
     args = ap.parse_args()
 
     device = get_device()
@@ -199,7 +217,14 @@ def main():
     model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
     model.to(device).eval()
     transform = get_test_transforms()
+    logit_bias = build_logit_bias(parse_class_bias(args.class_bias),
+                                  args.prior_correction, device)
+    proc_opts = dict(logit_bias=logit_bias, padding=args.padding,
+                     use_clahe=not args.no_clahe, use_tta=not args.no_tta,
+                     use_align=not args.no_align)
     print(f"Loaded {args.model} from {ckpt}")
+    if args.prior_correction or args.class_bias:
+        print(f"Logit bias applied: {logit_bias.cpu().numpy().round(2).tolist()}")
 
     face_detection = mp.solutions.face_detection.FaceDetection(  # type: ignore[attr-defined]
         model_selection=1, min_detection_confidence=0.3)
@@ -213,7 +238,7 @@ def main():
             out_root, os.path.splitext(os.path.basename(args.video))[0] + "_emotion.mp4")
         print(f"Writing to {out_path}")
         process_video(args.video, out_path, model, transform, face_detection, device,
-                      show=not args.no_show)  # prev/next ignored in single-file mode
+                      show=not args.no_show, **proc_opts)  # prev/next ignored in single-file mode
         cv2.destroyAllWindows()
         print(f"Saved: {out_path}")
         return
@@ -239,7 +264,7 @@ def main():
         print(f"[{idx+1}/{len(videos)}] {label}")
         print(f"         -> {os.path.relpath(out_path, ROOT)}")
         action = process_video(video_path, out_path, model, transform, face_detection, device,
-                               show=not args.no_show)
+                               show=not args.no_show, **proc_opts)
         cv2.destroyAllWindows()
         if action == "quit":
             print("  Quit by user.")

@@ -62,28 +62,34 @@ python scripts/download_model.py                 # newest release
 python scripts/download_model.py --tag emotion-v1.0   # a specific version
 ```
 
-This saves `best_EfficientNet_B0.pth` (the default path the scripts load). Then:
+This saves `best_MobileNetV2.pth` (the default path the scripts load). Then:
 
 ```bash
-python scripts/evaluate.py --model EfficientNet-B0           # reproduce the report
+python scripts/evaluate.py                                   # reproduce the report
 python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
 ```
 
-Current release — `emotion-v1.0`, test-set performance (RAF-DB, 3068 images):
+**Deployed model: MobileNetV2** (plain recipe — no class weighting). It keeps the
+natural class prior, so it generalizes noticeably better to **live video** than
+the class-weighted EfficientNet-B0 (which over-predicts Surprise), and it's half
+the size. Current release `emotion-v1.0`, test-set performance (RAF-DB, 3068 images):
 
-| Accuracy | Balanced acc. | Macro-F1 | Weighted-F1 |
-|---|---|---|---|
-| 83.93% | 79.10% | 76.41% | 84.28% |
+| Model | Accuracy | Balanced acc. | Macro-F1 | Surprise P / R | Size |
+|---|---|---|---|---|---|
+| **MobileNetV2 (deployed)** | **84.32%** | 75.43% | **76.72%** | 0.85 / 0.85 | 8.8 MB |
+| EfficientNet-B0 (alt) | 83.93% | 79.10% | 76.41% | 0.80 / 0.89 | 16 MB |
 
-> Trained on an HPC (5 head-only + 25 full epochs, batch 32, base LR 2e-4). The
-> per-version training history is kept at `checkpoints/history_EfficientNet_B0.json`.
+> For live inference, run the deployed model with **plain preprocessing** (it was
+> trained without CLAHE/heavy aug): e.g.
+> `python inference/video.py --video clip.mp4 --no-clahe --padding 0.2`.
+> The class-weighted EfficientNet-B0 remains available via `--model EfficientNet-B0`.
 > The pipeline below is only needed to **retrain** from scratch.
 
 ### Publishing a new model version (maintainers)
 
-1. `git tag emotion-vX.Y` is created as part of the GitHub Release.
+1. A `git tag emotion-vX.Y` is created as part of the GitHub Release.
 2. On GitHub: **Releases → Draft a new release →** choose/create tag `emotion-vX.Y`,
-   add notes (metrics), and **attach `best_EfficientNet_B0.pth`** as an asset → Publish.
+   add notes (metrics), and **attach `best_MobileNetV2.pth`** as an asset → Publish.
 3. `download_model.py` then serves it automatically (it points at the latest release).
 
 ## Pipeline (run in order)
@@ -135,3 +141,28 @@ python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
 Both use MediaPipe for face detection, pad the crop to match RAF-DB framing, and
 apply the same normalization as training. `video.py` adds eye-based alignment,
 CLAHE, and test-time augmentation for robustness on in-the-wild footage.
+
+### Reducing the live "Surprise" bias
+
+On real footage the model over-predicts **Surprise**. This is a train/deployment
+prior mismatch: inverse-frequency class weighting trains it to treat all emotions
+as equally likely, but real video is mostly Neutral/Happy, so it over-fires on
+Surprise (its widest decision region). Two no-retrain knobs (both inference
+scripts) counter it:
+
+```bash
+# Re-inject the natural class prior (logit adjustment). Start ~0.5, raise toward 1.0.
+python inference/video.py --video clip.mp4 --prior-correction 0.7
+
+# Or set explicit per-class logit offsets (order: Surprise,Fear,Disgust,Happy,Sad,Anger,Neutral)
+python inference/video.py --video clip.mp4 --class-bias "-1,0,0,0,0,0,0.5"
+```
+
+Preprocessing A/B knobs to find the trigger: `--padding 0.2` (tighter crop),
+`--no-clahe` (CLAHE can exaggerate the wide-eyed look), `--no-tta`, `--no-align`.
+
+> Root cause note: the older plain-trained MobileNetV2 (no class weighting, light
+> aug — see the `emotion` branch) generalized better to real video precisely
+> because it kept the natural prior. The proper long-term fix is to retrain with
+> softer/no class weighting (or fine-tune on in-the-wild data); `--prior-correction`
+> approximates that at inference time.
