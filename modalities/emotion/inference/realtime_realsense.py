@@ -1,7 +1,8 @@
 """
 Real-time emotion recognition from an Intel RealSense camera.
+Falls back to the default laptop webcam if no RealSense device is connected.
 
-Pipeline: RealSense color stream -> MediaPipe face detection -> padded crop ->
+Pipeline: camera frame -> MediaPipe face detection -> padded crop ->
 224x224 + ImageNet normalize -> model -> emotion label + confidence overlay.
 
 Run (from the emotion folder):
@@ -17,15 +18,35 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cv2
 import mediapipe as mp
 import numpy as np
-import pyrealsense2 as rs
 import torch
 import torch.nn.functional as F
 from PIL import Image
+
+try:
+    import pyrealsense2 as rs
+    _RS_AVAILABLE = True
+except ImportError:
+    _RS_AVAILABLE = False
 
 from config import CHECKPOINT_DIR, DEFAULT_MODEL, EMOTION_LABELS
 from src.engine import get_device
 from src.models import ALL_MODELS, safe_name
 from src.transforms import get_test_transforms
+
+
+def _try_start_realsense():
+    """Try to connect to a RealSense device. Returns (pipeline, align) or (None, None)."""
+    if not _RS_AVAILABLE:
+        return None, None
+    try:
+        pipeline = rs.pipeline()
+        cfg = rs.config()
+        cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        cfg.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        pipeline.start(cfg)
+        return pipeline, rs.align(rs.stream.color)
+    except Exception:
+        return None, None
 
 
 def main():
@@ -45,24 +66,37 @@ def main():
     face_detection = mp.solutions.face_detection.FaceDetection(
         model_selection=1, min_detection_confidence=0.5)
 
-    pipeline = rs.pipeline()
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    cfg.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    pipeline.start(cfg)
-    align = rs.align(rs.stream.color)
+    pipeline, align = _try_start_realsense()
+    if pipeline is not None:
+        print("RealSense camera connected.")
+        window_title = "Emotion Recognition (RealSense)"
+        cap = None
+    else:
+        print("RealSense not available — falling back to default webcam (index 0).")
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            print("Error: no camera found.")
+            return
+        window_title = "Emotion Recognition (Webcam)"
 
     try:
         while True:
-            frames = align.process(pipeline.wait_for_frames())
-            color_frame = frames.get_color_frame()
-            if not color_frame:
-                continue
-            frame = np.asarray(color_frame.get_data())
+            if pipeline is not None:
+                frames = align.process(pipeline.wait_for_frames())
+                color_frame = frames.get_color_frame()
+                if not color_frame:
+                    continue
+                frame = np.asarray(color_frame.get_data())
+            else:
+                ret, frame = cap.read()
+                if not ret:
+                    print("Failed to read from webcam.")
+                    break
+
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = face_detection.process(rgb)
             if not results.detections:
-                cv2.imshow("Emotion Recognition (RealSense)", frame)
+                cv2.imshow(window_title, frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
                 continue
@@ -88,11 +122,14 @@ def main():
                 cv2.putText(frame, label, (x, y - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-            cv2.imshow("Emotion Recognition (RealSense)", frame)
+            cv2.imshow(window_title, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
     finally:
-        pipeline.stop()
+        if pipeline is not None:
+            pipeline.stop()
+        if cap is not None:
+            cap.release()
         cv2.destroyAllWindows()
 
 
