@@ -9,6 +9,10 @@
 # Generated checkpoints (keep the folder, ignore weights/history)
 /checkpoints/*
 !/checkpoints/.gitkeep
+# ...except the released (shared) trained model, which IS committed so others
+# can run inference without retraining. See README "Pretrained model".
+!/checkpoints/best_EfficientNet_B0.pth
+!/checkpoints/history_EfficientNet_B0.json
 
 # Python caches
 __pycache__/
