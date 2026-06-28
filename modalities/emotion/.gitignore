@@ -6,12 +6,12 @@
 /outputs/*
 !/outputs/.gitkeep
 
-# Generated checkpoints (keep the folder, ignore weights/history)
+# Generated checkpoints: weights are NOT committed. The released model is
+# published as a versioned GitHub Release asset and fetched with
+# `python scripts/download_model.py`. See README "Pretrained model".
 /checkpoints/*
 !/checkpoints/.gitkeep
-# ...except the released (shared) trained model, which IS committed so others
-# can run inference without retraining. See README "Pretrained model".
-!/checkpoints/best_EfficientNet_B0.pth
+# Keep the small training-history JSON as a lightweight record per version.
 !/checkpoints/history_EfficientNet_B0.json
 
 # Python caches

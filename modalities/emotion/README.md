@@ -52,30 +52,39 @@ Dataset layout (RAF-DB `_aligned` crops, folders named by label 1–7):
 
 ## Pretrained model (use without retraining)
 
-A trained **EfficientNet-B0** checkpoint is committed to the repo, so you can run
-inference and evaluation directly after cloning — **no GPU or training required**.
+Trained weights are published as versioned
+[**GitHub Releases**](https://github.com/KesharaGunathilaka/adaptive-multimodal-hri/releases)
+(kept out of git so the repo stays lean and each model version is its own download).
+Fetch the latest into `checkpoints/` with one command — **no GPU or training required**:
 
-| File | Description |
-|---|---|
-| `checkpoints/best_EfficientNet_B0.pth` | trained weights (default path the scripts load) |
-| `checkpoints/history_EfficientNet_B0.json` | training history / config |
+```bash
+python scripts/download_model.py                 # newest release
+python scripts/download_model.py --tag emotion-v1.0   # a specific version
+```
 
-Test-set performance (RAF-DB, 3068 images):
+This saves `best_EfficientNet_B0.pth` (the default path the scripts load). Then:
+
+```bash
+python scripts/evaluate.py --model EfficientNet-B0           # reproduce the report
+python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
+```
+
+Current release — `emotion-v1.0`, test-set performance (RAF-DB, 3068 images):
 
 | Accuracy | Balanced acc. | Macro-F1 | Weighted-F1 |
 |---|---|---|---|
 | 83.93% | 79.10% | 76.41% | 84.28% |
 
-```bash
-# reproduce the evaluation report from the shared weights
-python scripts/evaluate.py --model EfficientNet-B0
-# or run inference on a video
-python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
-```
+> Trained on an HPC (5 head-only + 25 full epochs, batch 32, base LR 2e-4). The
+> per-version training history is kept at `checkpoints/history_EfficientNet_B0.json`.
+> The pipeline below is only needed to **retrain** from scratch.
 
-> The pipeline below is only needed to **retrain** from scratch. Trained on an HPC
-> (5 head-only + 25 full epochs, batch 32, base LR 2e-4). Other checkpoints stay
-> git-ignored; only this released model is tracked (see `.gitignore`).
+### Publishing a new model version (maintainers)
+
+1. `git tag emotion-vX.Y` is created as part of the GitHub Release.
+2. On GitHub: **Releases → Draft a new release →** choose/create tag `emotion-vX.Y`,
+   add notes (metrics), and **attach `best_EfficientNet_B0.pth`** as an asset → Publish.
+3. `download_model.py` then serves it automatically (it points at the latest release).
 
 ## Pipeline (run in order)
 
