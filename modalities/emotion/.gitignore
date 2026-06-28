@@ -1,2 +1,15 @@
+# Datasets and large media
+/data
 /videos
-/evaluation_results
+
+# Inference video outputs
+/outputs/*
+!/outputs/.gitkeep
+
+# Generated checkpoints (keep the folder, ignore weights/history)
+/checkpoints/*
+!/checkpoints/.gitkeep
+
+# Python caches
+__pycache__/
+*.pyc
