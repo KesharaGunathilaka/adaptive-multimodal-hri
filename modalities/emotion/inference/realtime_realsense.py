@@ -2,8 +2,9 @@
 Real-time emotion recognition from an Intel RealSense camera.
 Falls back to the default laptop webcam if no RealSense device is connected.
 
-Pipeline: camera frame -> MediaPipe face detection -> padded crop ->
-224x224 + ImageNet normalize -> model -> emotion label + confidence overlay.
+Pipeline (the plain emotion-branch method that works with the deployed
+MobileNetV2): camera frame -> MediaPipe close-range face detection -> tight
+crop -> 224x224 + ImageNet normalize -> model -> emotion label + confidence.
 
 Run (from the emotion folder):
     python inference/realtime_realsense.py
@@ -31,7 +32,6 @@ except ImportError:
 from config import CHECKPOINT_DIR, DEFAULT_MODEL, EMOTION_LABELS
 from src.engine import get_device
 from src.models import ALL_MODELS, safe_name
-from src.postprocess import build_logit_bias, parse_class_bias
 from src.transforms import get_test_transforms
 
 
@@ -54,14 +54,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=DEFAULT_MODEL, choices=list(ALL_MODELS.keys()))
     ap.add_argument("--checkpoint", default=None)
-    ap.add_argument("--padding", type=float, default=0.4,
-                    help="Crop padding fraction per side (A/B test: try 0.0-0.4).")
-    ap.add_argument("--prior-correction", type=float, default=0.0,
-                    help="Re-inject natural class prior (T*log prior). Try 0.5-1.0 "
-                         "to reduce Surprise over-prediction.")
-    ap.add_argument("--class-bias", default=None,
-                    help="Manual per-class logit offsets, e.g. '-1,0,0,0,0,0,0.5' "
-                         f"(order: {', '.join(EMOTION_LABELS)}).")
     args = ap.parse_args()
 
     device = get_device()
@@ -70,14 +62,12 @@ def main():
     model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
     model.to(device).eval()
     transform = get_test_transforms()
-    logit_bias = build_logit_bias(parse_class_bias(args.class_bias),
-                                  args.prior_correction, device)
     print(f"Loaded {args.model} from {ckpt}")
-    if args.prior_correction or args.class_bias:
-        print(f"Logit bias applied: {logit_bias.cpu().numpy().round(2).tolist()}")
 
+    # Close-range model (model_selection=0) + tight crop, matching how the
+    # deployed MobileNetV2 was trained/validated on RAF-DB aligned faces.
     face_detection = mp.solutions.face_detection.FaceDetection(
-        model_selection=1, min_detection_confidence=0.5)
+        model_selection=0, min_detection_confidence=0.5)
 
     pipeline, align = _try_start_realsense()
     if pipeline is not None:
@@ -108,32 +98,23 @@ def main():
 
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = face_detection.process(rgb)
-            if not results.detections:
-                cv2.imshow(window_title, frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    break
-                continue
-
-            h, w, _ = frame.shape
-            for det in results.detections:
-                box = det.location_data.relative_bounding_box
-                x, y = int(box.xmin * w), int(box.ymin * h)
-                bw, bh = int(box.width * w), int(box.height * h)
-                # Pad per side so the crop matches RAF-DB framing (tunable).
-                pad_w, pad_h = int(bw * args.padding), int(bh * args.padding)
-                x, y = max(0, x - pad_w), max(0, y - pad_h)
-                bw, bh = min(bw + 2 * pad_w, w - x), min(bh + 2 * pad_h, h - y)
-                face = frame[y:y + bh, x:x + bw]
-                if face.size == 0:
-                    continue
-                pil = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
-                tensor = transform(pil).unsqueeze(0).to(device)
-                with torch.no_grad():
-                    conf, pred = torch.max(F.softmax(model(tensor) + logit_bias, dim=1), 1)
-                label = f"{EMOTION_LABELS[pred.item()]}: {conf.item()*100:.1f}%"
-                cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
-                cv2.putText(frame, label, (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            if results.detections:
+                h, w, _ = frame.shape
+                for det in results.detections:
+                    box = det.location_data.relative_bounding_box
+                    x, y = max(0, int(box.xmin * w)), max(0, int(box.ymin * h))
+                    bw, bh = int(box.width * w), int(box.height * h)
+                    face = frame[y:y + bh, x:x + bw]
+                    if face.size == 0:
+                        continue
+                    pil = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
+                    tensor = transform(pil).unsqueeze(0).to(device)
+                    with torch.no_grad():
+                        conf, pred = torch.max(F.softmax(model(tensor), dim=1), 1)
+                    label = f"{EMOTION_LABELS[pred.item()]}: {conf.item()*100:.1f}%"
+                    cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
+                    cv2.putText(frame, label, (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
             cv2.imshow(window_title, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
