@@ -1,39 +1,38 @@
-"""Context model pipeline.
+"""Context model fusion pipeline.
 
 Fuses the three context signals — scene (environment), objects, and gaze — into
-a single `ContextState` per frame, the object the downstream policy / fusion
+a single ``ContextState`` per frame, the object the downstream policy / fusion
 module consumes.
-
-Run directly for a webcam demo:
-    python modalities/context/context_pipeline.py
 """
-
 from pathlib import Path
 import sys
 import time
 
 import cv2
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from modalities.context.scene_classification.scene_classifier import SceneClassifier
+from modalities.context.config import (
+    ATTENTION_MAX_DIST,
+    GAZE_REQUIRES_PERSON,
+    SCENE_EVERY,
+)
+from modalities.context.scene_classification.src.classifier import SceneClassifier
 from modalities.context.object_detection.detector import ContextDetector
 from modalities.context.gaze_estimation.gaze_estimator import GazeEstimator
-from modalities.context.context_state import (
+from modalities.context.src.context_state import (
     ContextState,
     DetectedObject,
-    resolve_attention,
+    GazeInfo,
     infer_activity,
+    resolve_attention,
 )
-
-# Scene changes slowly, so we only re-classify every N frames to save compute.
-SCENE_EVERY = 5
 
 
 class ContextPipeline:
-    def __init__(self, scene_every=SCENE_EVERY, gaze_requires_person=True):
+    def __init__(self, scene_every=SCENE_EVERY, gaze_requires_person=GAZE_REQUIRES_PERSON):
         self.scene = SceneClassifier()
         self.detector = ContextDetector()
         self.gaze = GazeEstimator()
@@ -49,7 +48,7 @@ class ContextPipeline:
         self._frame_idx += 1
 
         # --- Scene (throttled) ---
-        if self._frame_idx % self.scene_every == 1 or self.scene_every == 1:
+        if self.scene_every <= 1 or self._frame_idx % self.scene_every == 1:
             self._last_scene = self.scene.predict(frame)
         scene_label = self._last_scene["label"]
         scene_conf = self._last_scene["confidence"]
@@ -58,34 +57,26 @@ class ContextPipeline:
         annotated, detections, _counts, _stable = self.detector.process_frame(frame)
         objects = [
             DetectedObject(
-                label=d["label"],
-                category=d["category"],
-                confidence=d["confidence"],
-                bbox=d["bbox"],
-                track_id=d["track_id"],
+                label=d["label"], category=d["category"], confidence=d["confidence"],
+                bbox=d["bbox"], track_id=d["track_id"],
             )
             for d in detections
         ]
 
-        # --- Gaze (gated on a person being present, to save GPU on Jetson) ---
+        # --- Gaze (optionally gated on a person being present) ---
         person_present = any(o.label == "person" for o in objects)
         if person_present or not self.gaze_requires_person:
             gaze = self.gaze.estimate(frame)
         else:
-            gaze = _no_face()
+            gaze = GazeInfo(has_face=False)
 
         # --- Fusion ---
-        attention = resolve_attention(gaze, objects)
+        attention = resolve_attention(gaze, objects, max_dist=ATTENTION_MAX_DIST)
         activity = infer_activity(scene_label, attention, gaze)
 
         state = ContextState(
-            scene=scene_label,
-            scene_confidence=scene_conf,
-            objects=objects,
-            gaze=gaze,
-            attention_object=attention,
-            activity=activity,
-            engaged=gaze.looking_at_robot,
+            scene=scene_label, scene_confidence=scene_conf, objects=objects, gaze=gaze,
+            attention_object=attention, activity=activity, engaged=gaze.looking_at_robot,
             timestamp=time.time(),
         )
         return annotated, state
@@ -94,17 +85,10 @@ class ContextPipeline:
         self.gaze.close()
 
 
-def _no_face():
-    from modalities.context.context_state import GazeInfo
-
-    return GazeInfo(has_face=False)
-
-
 def _draw_overlay(frame, state, fps):
-    """Annotate a frame with the fused context for the demo."""
+    """Annotate a frame with the fused context (used by the inference scripts)."""
     h, w = frame.shape[:2]
 
-    # Gaze ray + attention highlight.
     if state.gaze.has_face and state.gaze.gaze_point and state.gaze.face_bbox:
         fb = state.gaze.face_bbox
         cx, cy = (fb[0] + fb[2]) // 2, (fb[1] + fb[3]) // 2
@@ -114,17 +98,9 @@ def _draw_overlay(frame, state, fps):
     if state.attention_object is not None:
         x1, y1, x2, y2 = state.attention_object.bbox
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-        cv2.putText(
-            frame,
-            f"attending: {state.attention_object.label}",
-            (x1, max(y1 - 8, 15)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (0, 0, 255),
-            2,
-        )
+        cv2.putText(frame, f"attending: {state.attention_object.label}",
+                    (x1, max(y1 - 8, 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-    # Top info panel.
     cv2.rectangle(frame, (0, 0), (w, 58), (30, 30, 30), -1)
     line1 = f"scene: {state.scene} ({state.scene_confidence:.2f})   activity: {state.activity}"
     engaged = "ENGAGED" if state.engaged else "not engaged"
@@ -132,45 +108,3 @@ def _draw_overlay(frame, state, fps):
     cv2.putText(frame, line1, (10, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     cv2.putText(frame, line2, (10, 46), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
     return frame
-
-
-def main():
-    print("Initializing context pipeline (scene + objects + gaze)...")
-    pipeline = ContextPipeline()
-
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: Cannot open webcam.")
-        sys.exit(1)
-
-    print("Pipeline ready. Press 'q' or 'ESC' to quit.")
-    prev_time = time.time()
-    fps = 0.0
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        annotated, state = pipeline.process_frame(frame)
-
-        now = time.time()
-        dt = now - prev_time
-        prev_time = now
-        if dt > 0:
-            fps = 0.9 * fps + 0.1 * (1.0 / dt)
-
-        _draw_overlay(annotated, state, fps)
-        cv2.imshow("Context Model", annotated)
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord("q") or key == 27:
-            break
-
-    pipeline.close()
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()
