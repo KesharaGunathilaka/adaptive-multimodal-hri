@@ -1,27 +1,31 @@
 """
-Real-time emotion recognition from an Intel RealSense camera.
-Falls back to the default laptop webcam if no RealSense device is connected.
+Standalone real-time emotion recognition from a camera.
+Uses an Intel RealSense camera if connected, else the default laptop webcam.
 
-Pipeline (the plain emotion-branch method that works with the deployed
-MobileNetV2): camera frame -> MediaPipe close-range face detection -> tight
-crop -> 224x224 + ImageNet normalize -> model -> emotion label + confidence.
+SELF-CONTAINED: this file needs only the trained weights (.pth) and these pip
+packages — nothing else from the project:
+    pip install torch torchvision opencv-python mediapipe pillow numpy
+    # pyrealsense2 is optional (only for a RealSense camera)
 
-Run (from the emotion folder):
-    python inference/realtime_realsense.py
-    python inference/realtime_realsense.py --model EfficientNet-B0
+Put the weights file next to this script (or pass --checkpoint), then:
+    python realtime_realsense.py
+    python realtime_realsense.py --checkpoint best_MobileNetV2.pth
+
+Method: camera frame -> MediaPipe close-range face detection -> tight crop ->
+224x224 + ImageNet normalize -> model -> emotion label + confidence.
 """
 import argparse
 import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cv2
 import mediapipe as mp
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as tvm
 from PIL import Image
+from torchvision import transforms
 
 try:
     import pyrealsense2 as rs
@@ -29,14 +33,44 @@ try:
 except ImportError:
     _RS_AVAILABLE = False
 
-from config import CHECKPOINT_DIR, DEFAULT_MODEL, EMOTION_LABELS
-from src.engine import get_device
-from src.models import ALL_MODELS, safe_name
-from src.transforms import get_test_transforms
+# ── Configuration (edit these to ship a different model) ──────────────────
+EMOTION_LABELS = ["Surprise", "Fear", "Disgust", "Happy", "Sad", "Anger", "Neutral"]
+DEFAULT_WEIGHTS = "best_MobileNetV2.pth"
+IMAGE_SIZE = 224
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def build_model(num_classes=len(EMOTION_LABELS)):
+    """MobileNetV2 with a `num_classes` head. Weights come from the checkpoint."""
+    model = tvm.mobilenet_v2(weights=None)
+    model.classifier[1] = nn.Linear(model.last_channel, num_classes)
+    return model
+
+
+def get_transform():
+    return transforms.Compose([
+        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+
+
+def resolve_weights(name):
+    candidates = [
+        name,
+        os.path.join(SCRIPT_DIR, name),
+        os.path.join(SCRIPT_DIR, "checkpoints", name),
+        os.path.join(SCRIPT_DIR, "..", "checkpoints", name),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    raise SystemExit(
+        f"Weights file '{name}' not found. Put it next to this script or pass "
+        f"--checkpoint <path>.\nLooked in:\n  " + "\n  ".join(candidates))
 
 
 def _try_start_realsense():
-    """Try to connect to a RealSense device. Returns (pipeline, align) or (None, None)."""
     if not _RS_AVAILABLE:
         return None, None
     try:
@@ -52,31 +86,32 @@ def _try_start_realsense():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default=DEFAULT_MODEL, choices=list(ALL_MODELS.keys()))
-    ap.add_argument("--checkpoint", default=None)
+    ap.add_argument("--checkpoint", default=DEFAULT_WEIGHTS, help="Path to the .pth weights.")
+    ap.add_argument("--camera", type=int, default=0, help="Webcam index (fallback).")
     args = ap.parse_args()
 
-    device = get_device()
-    ckpt = args.checkpoint or os.path.join(CHECKPOINT_DIR, f"best_{safe_name(args.model)}.pth")
-    model = ALL_MODELS[args.model]()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ckpt = resolve_weights(args.checkpoint)
+    model = build_model()
     model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
     model.to(device).eval()
-    transform = get_test_transforms()
-    print(f"Loaded {args.model} from {ckpt}")
+    transform = get_transform()
+    print("=" * 60)
+    print(f" weights: {ckpt}")
+    print(f" device:  {device}")
+    print(f" labels:  {EMOTION_LABELS}")
+    print("=" * 60)
 
-    # Close-range model (model_selection=0) + tight crop, matching how the
-    # deployed MobileNetV2 was trained/validated on RAF-DB aligned faces.
     face_detection = mp.solutions.face_detection.FaceDetection(
         model_selection=0, min_detection_confidence=0.5)
 
     pipeline, align = _try_start_realsense()
     if pipeline is not None:
         print("RealSense camera connected.")
-        window_title = "Emotion Recognition (RealSense)"
-        cap = None
+        window_title, cap = "Emotion Recognition (RealSense)", None
     else:
-        print("RealSense not available — falling back to default webcam (index 0).")
-        cap = cv2.VideoCapture(0)
+        print(f"RealSense not available — using webcam (index {args.camera}).")
+        cap = cv2.VideoCapture(args.camera)
         if not cap.isOpened():
             print("Error: no camera found.")
             return
@@ -96,8 +131,7 @@ def main():
                     print("Failed to read from webcam.")
                     break
 
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = face_detection.process(rgb)
+            results = face_detection.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             if results.detections:
                 h, w, _ = frame.shape
                 for det in results.detections:
@@ -111,10 +145,10 @@ def main():
                     tensor = transform(pil).unsqueeze(0).to(device)
                     with torch.no_grad():
                         conf, pred = torch.max(F.softmax(model(tensor), dim=1), 1)
-                    label = f"{EMOTION_LABELS[pred.item()]}: {conf.item()*100:.1f}%"
+                    label = f"{EMOTION_LABELS[pred.item()]}: {conf.item() * 100:.1f}%"
                     cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
-                    cv2.putText(frame, label, (x, y - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.8, (0, 255, 0), 2)
 
             cv2.imshow(window_title, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):

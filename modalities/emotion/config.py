@@ -59,8 +59,13 @@ NORM_STD = [0.229, 0.224, 0.225]
 # Deployment budget: models above this size are flagged in the comparison.
 SIZE_BUDGET_MB = 20.0
 
-# Default architecture used by train / evaluate / inference when unspecified.
+# ── Deployed model (what inference ships with) ───────────────────────────
+# These two lines are the single place that decides which model runs by
+# default. To ship a different model: drop its .pth in checkpoints/ and update
+# both lines. Inference can still be overridden per-run with --model/--checkpoint.
+#
 # MobileNetV2 (plain recipe) is the deployed model: it keeps the natural class
 # prior, so it generalizes better to live video than the class-weighted
 # EfficientNet-B0, and it's smaller (8.8 MB). See README "Pretrained model".
 DEFAULT_MODEL = "MobileNetV2"
+DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "best_MobileNetV2.pth")
