@@ -1,13 +1,16 @@
 """
 Configuration for Base YOLO11-Nano HRI Object Detection.
 """
+import os
 
 # ─────────────────────────────────────────────
 # Model Parameters
 # ─────────────────────────────────────────────
-# This will automatically download the standard COCO weights on first run.
-# Once exported on the Jetson, change this to "yolo11n.engine"
-MODEL_PATH = "yolo11n.pt"
+# Absolute path to the weights so detection works from any working directory.
+# Downloads the standard COCO weights into checkpoints/ on first run if missing.
+# Once exported on the Jetson, point this at "yolo11n.engine".
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(_ROOT, "checkpoints", "yolo11n.pt")
 
 # ─────────────────────────────────────────────
 # Target Classes & Categorization
