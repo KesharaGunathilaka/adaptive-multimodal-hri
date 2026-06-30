@@ -20,7 +20,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from modalities.context.gaze_estimation import config as cfg
-from modalities.context.context_state import GazeInfo
+from modalities.context.src.context_state import GazeInfo
 
 # Landmark indices (MediaPipe Face Mesh, 468 + 10 iris points).
 _NOSE_TIP = 1
