@@ -1,6 +1,7 @@
 # Virtual environments
 venv/
 env/
+.venv/
 *.pyc
 __pycache__/
 
@@ -24,3 +25,10 @@ datasets/
 # OS
 .DS_Store
 Thumbs.db
+
+videos/
+data/
+
+# Inference output dirs (annotated clips / logs)
+runs/
+outputs/

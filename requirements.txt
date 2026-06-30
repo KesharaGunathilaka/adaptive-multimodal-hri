@@ -1,10 +1,26 @@
 # Shared dependencies for the project
 # Add your dependencies here (MediaPipe, PyTorch, etc.)
+
+#---- FOR HPC ONLY ----
+#--extra-index-url https://download.pytorch.org/whl/cu128
+## cu128 matches the system NVIDIA driver (CUDA 12.8 / driver 570.x)
+#torch==2.11.0+cu128
+#torchvision==0.26.0+cu128
+
+#---- FOR OTHER PC ----
 torch
 torchvision
+
 opencv-python
 pillow
 numpy
 tqdm
-mediapipe==0.10.11 
-opencv-python
+mediapipe==0.10.35 
+scikit-learn
+matplotlib
+seaborn
+pandas
+tabulate
+ultralytics
+pyrealsense2>=2.54.0
+optuna # For hyperparameter tuning in the scene classification module
