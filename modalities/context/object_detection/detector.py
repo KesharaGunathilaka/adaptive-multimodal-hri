@@ -107,6 +107,15 @@ class ContextDetector:
 
         return annotated_frame, detections, dict(counts), stable_categories
 
+    def reset(self):
+        """Clear temporal history and tracker state (e.g. switching to a new video).
+
+        Without this, ByteTrack IDs and the smoothing window would carry over
+        from the end of one clip into the start of the next.
+        """
+        self._history.clear()
+        self.model.predictor = None
+
     def _stable_categories(self):
         """Categories present in >= presence_min_ratio of the recent frames."""
         if not self._history:
