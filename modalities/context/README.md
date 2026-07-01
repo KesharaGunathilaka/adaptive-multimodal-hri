@@ -31,7 +31,7 @@ context/
 │   ├── config.py
 │   ├── src/                   # models.py, transforms.py, data.py, engine.py, classifier.py
 │   ├── scripts/               # compare_models.py, train.py, tune.py, evaluate.py
-│   ├── inference/             # realtime.py, video.py (scene only)
+│   ├── inference/             # realtime.py, video.py — SELF-CONTAINED (mirrors emotion/inference/)
 │   ├── checkpoints/           # weights (git-ignored) + classes.json
 │   └── reports/               # generated comparison / training / evaluation reports
 │
@@ -91,15 +91,36 @@ python scripts/evaluate.py           # Stage 4 — full evaluation       -> repo
 Deployed model: **EfficientNet-B0** (`checkpoints/best_EfficientNet_B0.pth`),
 2-class (classroom, kitchen). Every script supports `--help` and `--model`.
 
-## Per-sub-model inference
+## Per-sub-model inference (run independently)
 
-Each sub-model also ships standalone webcam/video scripts for isolated testing:
+Each sub-model also ships its own webcam/video scripts for isolated testing, in
+the same style as `modalities/emotion/inference/`. `video.py` defaults to
+scanning the **repo-root `videos/` folder** when run with no arguments, and
+supports single-file mode, batch mode, `--skip-existing`, and pause/next/prev/
+quit playback controls (`[SPACE] [N] [P] [Q]`).
 
 ```bash
-cd modalities/context/scene_classification && python inference/realtime.py
-cd modalities/context/object_detection     && python inference/realtime.py
-cd modalities/context/gaze_estimation       && python inference/realtime.py
+# Scene classification — SELF-CONTAINED: needs only its .pth + pip install
+# torch torchvision opencv-python pillow numpy (no project imports at all)
+cd modalities/context/scene_classification/inference
+python video.py                              # batch: repo videos/ folder
+python video.py --video ../../../../myclip.mp4
+python realtime.py                            # webcam / RealSense
+
+# Object detection — needs the project's detector.py + a YOLO checkpoint
+cd modalities/context/object_detection/inference
+python video.py                              # batch: repo videos/ folder
+python realtime.py
+
+# Gaze estimation — needs the project's gaze_estimator.py
+cd modalities/context/gaze_estimation/inference
+python video.py                              # batch: repo videos/ folder
+python realtime.py
 ```
+
+Common `video.py` flags: `--video <file>` / `--videos-dir <folder>` (mutually
+exclusive, default is the repo `videos/` folder), `--output` / `--out-dir`
+(default `outputs/`), `--no-show`, `--skip-existing`.
 
 ## Notes
 
