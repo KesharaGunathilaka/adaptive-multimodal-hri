@@ -12,6 +12,23 @@ This folder contains the real-time human body posture and motion tracking pipeli
 
 ---
 
+## 📂 Directory Layout
+```
+motion/
+├── config.py                 # Central configurations, paths, labels, and colors
+├── checkpoints/              # Model weights and configuration mappings
+│   ├── motion_lstm_v2_best.pth
+│   └── model_config_v2.json
+├── src/                      # Modality source components
+│   ├── __init__.py           # Package interfaces
+│   ├── models.py             # PyTorch LSTM model class
+│   └── engine.py             # MotionEngine coordinate tracking & resolver
+└── inference/                # Execution scripts
+    └── realtime_realsense.py # Real-time camera stream detector (RealSense/Webcam)
+```
+
+---
+
 ## 📂 File-by-File Description
 
 *   **`config.py`**: central configurations file. Stores directory paths, active motion category labels, and display color definitions.

@@ -12,6 +12,28 @@ This folder contains the real-time hand gesture recognition pipeline for the Ada
 
 ---
 
+## 📂 Directory Layout
+```
+gesture/
+├── config.py                 # Central configurations, paths, labels, and colors
+├── checkpoints/              # Folder housing model weights and label mappings
+│   ├── keypoint_classifier.pth
+│   └── keypoint_classifier_label.csv
+├── src/                      # Modality source components
+│   ├── __init__.py           # Package interfaces
+│   ├── models.py             # PyTorch model class and wrapper
+│   ├── tracker.py            # Temporal coordinate history tracking
+│   ├── engine.py             # GestureEngine state-machine resolver
+│   └── transforms.py         # Landmark scaling and coordinate preprocessing
+├── scripts/                  # Training and conversion utilities
+│   ├── convert_keras_to_pytorch.py # Converts original Keras .hdf5 to PyTorch .pth
+│   └── train_pytorch.py      # Trains the MLP directly in PyTorch from keypoint.csv
+└── inference/                # Execution scripts
+    └── realtime_realsense.py # Real-time camera stream detector (RealSense/Webcam)
+```
+
+---
+
 ## 📂 File-by-File Description
 
 *   **`config.py`**: central configurations file. Stores directory paths, the 6 gesture category labels, and BGR color maps for the UI.
