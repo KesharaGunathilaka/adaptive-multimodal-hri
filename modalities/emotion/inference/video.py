@@ -187,7 +187,7 @@ def main():
     print("=" * 60)
 
     face_detection = mp.solutions.face_detection.FaceDetection(
-        model_selection=0, min_detection_confidence=0.5)
+        model_selection=1, min_detection_confidence=0.5)
     out_root = os.path.abspath(args.out_dir)
 
     # ── Single-file mode ─────────────────────────────────────────────────
