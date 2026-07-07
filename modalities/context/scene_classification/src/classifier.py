@@ -27,10 +27,27 @@ from config import (  # noqa: E402
     NORM_MEAN,
     NORM_STD,
     IMAGE_SIZE,
+    SCENE_BACKEND,
     SCENE_LABELS,
     CLASSES_FILE,
 )
 from src.models import build_model  # noqa: E402
+
+
+def create_scene_classifier(backend=None, **kwargs):
+    """Build the configured scene classifier.
+
+    backend "clip" -> ZeroShotSceneClassifier (deployed; 99.5% on captured
+    clips), "cnn" -> the trained CNN SceneClassifier (evaluated baseline).
+    Defaults to config.SCENE_BACKEND.
+    """
+    backend = backend or SCENE_BACKEND
+    if backend == "clip":
+        from src.zero_shot import ZeroShotSceneClassifier
+        return ZeroShotSceneClassifier(**kwargs)
+    if backend == "cnn":
+        return SceneClassifier(**kwargs)
+    raise ValueError(f"Unknown scene backend '{backend}' (expected 'clip' or 'cnn').")
 
 
 class SceneClassifier:

@@ -21,12 +21,15 @@ REPORT_DIR = os.path.join(ROOT, "reports")
 CLASSES_FILE = os.path.join(CHECKPOINT_DIR, "classes.json")
 
 # ── Dataset / model ──────────────────────────────────────────────────────
+# Class count of the trained CNN baseline (its label order lives in
+# checkpoints/classes.json, written at training time from the dataset folders).
 NUM_CLASSES = 2
 IMAGE_SIZE = 224
 
-# Class order MUST match torchvision ImageFolder (alphabetical folder sort).
-# Office was dropped (captured "classroom" clips were confidently misread as
-# office); we model only the two environments we actually deploy in.
+# The deployed scene vocabulary (zero-shot CLIP backend). Each label needs a
+# prompt list in SCENE_PROMPTS below — extending this list is the whole
+# process of adding an environment, no dataset or retraining required.
+# (The CNN baseline still covers only classroom/kitchen via classes.json.)
 SCENE_LABELS = ["classroom", "kitchen"]
 
 # ── Default hyper-parameters ─────────────────────────────────────────────
@@ -50,7 +53,46 @@ NORM_STD = [0.229, 0.224, 0.225]
 SIZE_BUDGET_MB = 20.0
 
 # ── Deployed model (what inference ships with) ───────────────────────────
-# EfficientNet-B0 won the comparison (best accuracy within the size budget).
-# To ship a different model: drop its .pth in checkpoints/ and update both lines.
+# EfficientNet-B0 won the CNN comparison (best accuracy within the size budget).
+# To ship a different CNN: drop its .pth in checkpoints/ and update both lines.
 DEFAULT_MODEL = "EfficientNet-B0"
 DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "best_EfficientNet_B0.pth")
+
+# ── Scene backend selection ──────────────────────────────────────────────
+# "clip": zero-shot CLIP image-text matching (deployed). On the captured clips
+#         it scores 99.5% overall vs the trained CNN's 82.2% (kitchen domain
+#         gap) — see reports/zero_shot/ZERO_SHOT_REPORT.md. Adding a scene
+#         class is a prompt edit below, no retraining.
+# "cnn":  the trained EfficientNet-B0 (kept as the evaluated baseline).
+SCENE_BACKEND = "clip"
+
+CLIP_MODEL = "ViT-B-32-quickgelu"   # open_clip model name
+CLIP_PRETRAINED = "openai"          # weights tag (auto-downloads on first use)
+
+# Prompt ensembles per scene class. Keys MUST match SCENE_LABELS order.
+SCENE_PROMPTS = {
+    "classroom": [
+        "a photo of a classroom",
+        "a photo taken inside a classroom",
+        "a classroom with desks and chairs",
+        "a lecture room in a university",
+        "students sitting in a classroom",
+        "a whiteboard at the front of a classroom",
+    ],
+    "kitchen": [
+        "a photo of a kitchen",
+        "a photo taken inside a kitchen",
+        "a kitchen with cabinets and appliances",
+        "a person cooking in a kitchen",
+        "a kitchen countertop with utensils",
+        "a stove and a sink in a kitchen",
+    ],
+}
+
+# Frames matching these better than any scene are reported as "uncertain"
+# (face fills the frame, no scene content visible).
+ABSTAIN_PROMPTS = [
+    "a close-up photo of a person's face",
+    "a selfie of a person",
+    "a portrait of a person looking at the camera",
+]
