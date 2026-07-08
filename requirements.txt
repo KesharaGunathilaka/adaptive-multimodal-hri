@@ -22,5 +22,8 @@ seaborn
 pandas
 tabulate
 ultralytics
+open_clip_torch  # zero-shot CLIP scene classification (context model)
+transformers     # SmolVLM2 context analyzer (context model)
+num2words        # required by the SmolVLM2 processor
 pyrealsense2>=2.54.0
 optuna # For hyperparameter tuning in the scene classification module

@@ -1,4 +1,8 @@
-"""Live webcam demo of the full fused context model (scene + objects + gaze).
+"""Live webcam demo of the full context model (CLIP scene + SmolVLM2 situation).
+
+The camera loop runs at full speed; the VLM analyses a frame in a background
+thread at most every VLM_INTERVAL_SEC, and the overlay always shows the most
+recent finished analysis.
 
 Run from repo root or this folder:
     python inference/realtime.py
@@ -17,8 +21,8 @@ from modalities.context.src.pipeline import ContextPipeline, _draw_overlay
 
 
 def main():
-    print("Initializing context pipeline (scene + objects + gaze)...")
-    pipeline = ContextPipeline()
+    print("Initializing context pipeline (CLIP scene + SmolVLM2)...")
+    pipeline = ContextPipeline(vlm_async=True)
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():

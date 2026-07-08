@@ -1,11 +1,20 @@
-"""Context model fusion pipeline.
+"""Context model pipeline: CLIP scene classification + small-VLM situation analysis.
 
-Fuses the three context signals — scene (environment), objects, and gaze — into
-a single ``ContextState`` per frame, the object the downstream policy / fusion
-module consumes.
+Produces one `ContextState` per frame for the downstream policy / fusion module:
+    scene (CLIP zero-shot, throttled to every Nth frame)
+  + vlm   (SmolVLM2: people / activity / attention / objects / summary)
+
+The VLM is much slower than a frame interval, so it runs on its own schedule:
+  - async mode (realtime camera): a worker thread analyses a frame at most every
+    VLM_INTERVAL_SEC; the camera loop never blocks and every ContextState carries
+    the most recent finished analysis.
+  - sync mode (offline video): the VLM runs inline every VLM_EVERY_FRAMES
+    processed frames — deterministic, good for batch evaluation.
 """
+
 from pathlib import Path
 import sys
+import threading
 import time
 
 import cv2
@@ -15,96 +24,113 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from modalities.context.config import (
-    ATTENTION_MAX_DIST,
-    GAZE_REQUIRES_PERSON,
     SCENE_EVERY,
+    VLM_EVERY_FRAMES,
+    VLM_INTERVAL_SEC,
 )
-from modalities.context.scene_classification.src.classifier import SceneClassifier
-from modalities.context.object_detection.detector import ContextDetector
-from modalities.context.gaze_estimation.gaze_estimator import GazeEstimator
-from modalities.context.src.context_state import (
-    ContextState,
-    DetectedObject,
-    GazeInfo,
-    infer_activity,
-    resolve_attention,
-)
+from modalities.context.scene_classification.src.classifier import create_scene_classifier
+from modalities.context.src.context_state import ContextState, VLMContext
+from modalities.context.src.vlm import VLMContextAnalyzer
 
 
 class ContextPipeline:
-    def __init__(self, scene_every=SCENE_EVERY, gaze_requires_person=GAZE_REQUIRES_PERSON):
-        self.scene = SceneClassifier()
-        self.detector = ContextDetector()
-        self.gaze = GazeEstimator()
+    def __init__(
+        self,
+        scene_every=SCENE_EVERY,
+        vlm_async=True,
+        vlm_interval_sec=VLM_INTERVAL_SEC,
+        vlm_every_frames=VLM_EVERY_FRAMES,
+    ):
+        self.scene = create_scene_classifier()
+        self.vlm = VLMContextAnalyzer()
 
         self.scene_every = scene_every
-        self.gaze_requires_person = gaze_requires_person
+        self.vlm_async = vlm_async
+        self.vlm_interval_sec = vlm_interval_sec
+        self.vlm_every_frames = vlm_every_frames
 
         self._frame_idx = 0
         self._last_scene = {"label": "unknown", "confidence": 0.0}
 
+        self._vlm_lock = threading.Lock()
+        self._vlm_busy = False
+        self._latest_vlm = VLMContext()
+        self._last_vlm_done = 0.0
+
     def process_frame(self, frame):
-        """Run all three sub-models and fuse them into a ContextState."""
+        """Classify the scene, keep the VLM fed, and return the fused state."""
         self._frame_idx += 1
 
         # --- Scene (throttled) ---
         if self.scene_every <= 1 or self._frame_idx % self.scene_every == 1:
             self._last_scene = self.scene.predict(frame)
-        scene_label = self._last_scene["label"]
-        scene_conf = self._last_scene["confidence"]
 
-        # --- Objects (every frame) ---
-        annotated, detections, _counts, _stable = self.detector.process_frame(frame)
-        objects = [
-            DetectedObject(
-                label=d["label"], category=d["category"], confidence=d["confidence"],
-                bbox=d["bbox"], track_id=d["track_id"],
-            )
-            for d in detections
-        ]
+        # --- VLM (async worker or inline every N frames) ---
+        if self.vlm_async:
+            self._maybe_submit_async(frame)
+        elif self._frame_idx % self.vlm_every_frames == 1:
+            vlm_ctx = self.vlm.analyze(frame, frame_timestamp=time.time())
+            with self._vlm_lock:
+                self._latest_vlm = vlm_ctx
 
-        # --- Gaze (optionally gated on a person being present) ---
-        person_present = any(o.label == "person" for o in objects)
-        if person_present or not self.gaze_requires_person:
-            gaze = self.gaze.estimate(frame)
-        else:
-            gaze = GazeInfo(has_face=False)
+        with self._vlm_lock:
+            vlm_snapshot = self._latest_vlm
 
-        # --- Fusion ---
-        attention = resolve_attention(gaze, objects, max_dist=ATTENTION_MAX_DIST)
-        activity = infer_activity(scene_label, attention, gaze)
-
-        state = ContextState(
-            scene=scene_label, scene_confidence=scene_conf, objects=objects, gaze=gaze,
-            attention_object=attention, activity=activity, engaged=gaze.looking_at_robot,
+        return frame, ContextState(
+            scene=self._last_scene["label"],
+            scene_confidence=self._last_scene["confidence"],
+            vlm=vlm_snapshot,
             timestamp=time.time(),
         )
-        return annotated, state
+
+    def reset(self):
+        """Clear temporal state (e.g. when switching video sources)."""
+        self._frame_idx = 0
+        self.scene.reset()
+        with self._vlm_lock:
+            self._latest_vlm = VLMContext()
 
     def close(self):
-        self.gaze.close()
+        pass  # nothing to release; worker threads are daemonic
+
+    # ── async VLM worker ─────────────────────────────────────────────────
+    def _maybe_submit_async(self, frame):
+        now = time.time()
+        with self._vlm_lock:
+            if self._vlm_busy or (now - self._last_vlm_done) < self.vlm_interval_sec:
+                return
+            self._vlm_busy = True
+        threading.Thread(
+            target=self._vlm_worker, args=(frame.copy(), now), daemon=True
+        ).start()
+
+    def _vlm_worker(self, frame, captured_at):
+        try:
+            ctx = self.vlm.analyze(frame, frame_timestamp=captured_at)
+        except Exception as exc:                     # keep the camera loop alive
+            ctx = VLMContext(summary=f"vlm error: {exc}")
+        with self._vlm_lock:
+            self._latest_vlm = ctx
+            self._last_vlm_done = time.time()
+            self._vlm_busy = False
 
 
 def _draw_overlay(frame, state, fps):
     """Annotate a frame with the fused context (used by the inference scripts)."""
     h, w = frame.shape[:2]
+    v = state.vlm
 
-    if state.gaze.has_face and state.gaze.gaze_point and state.gaze.face_bbox:
-        fb = state.gaze.face_bbox
-        cx, cy = (fb[0] + fb[2]) // 2, (fb[1] + fb[3]) // 2
-        gp = (int(state.gaze.gaze_point[0]), int(state.gaze.gaze_point[1]))
-        cv2.arrowedLine(frame, (cx, cy), gp, (0, 255, 0), 2, tipLength=0.2)
-
-    if state.attention_object is not None:
-        x1, y1, x2, y2 = state.attention_object.bbox
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-        cv2.putText(frame, f"attending: {state.attention_object.label}",
-                    (x1, max(y1 - 8, 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-    cv2.rectangle(frame, (0, 0), (w, 58), (30, 30, 30), -1)
-    line1 = f"scene: {state.scene} ({state.scene_confidence:.2f})   activity: {state.activity}"
-    engaged = "ENGAGED" if state.engaged else "not engaged"
-    line2 = f"{engaged}   objects: {len(state.objects)}   {fps:.1f} FPS"
+    cv2.rectangle(frame, (0, 0), (w, 84), (30, 30, 30), -1)
+    line1 = (f"scene: {state.scene} ({state.scene_confidence:.2f})   "
+             f"people: {v.people}   {fps:.1f} FPS")
+    line2 = f"activity: {v.activity}   attention: {v.attention}"
+    line3 = "objects: " + (", ".join(v.objects) if v.objects else "-")
     cv2.putText(frame, line1, (10, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-    cv2.putText(frame, line2, (10, 46), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+    cv2.putText(frame, line2, (10, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 255), 1)
+    cv2.putText(frame, line3, (10, 72), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 255), 1)
+
+    if v.summary:
+        cv2.rectangle(frame, (0, h - 28), (w, h), (30, 30, 30), -1)
+        cv2.putText(frame, v.summary[:110], (10, h - 9),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 255, 200), 1)
     return frame
