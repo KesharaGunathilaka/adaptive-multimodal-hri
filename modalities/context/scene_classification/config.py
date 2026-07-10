@@ -30,7 +30,7 @@ IMAGE_SIZE = 224
 # prompt list in SCENE_PROMPTS below — extending this list is the whole
 # process of adding an environment, no dataset or retraining required.
 # (The CNN baseline still covers only classroom/kitchen via classes.json.)
-SCENE_LABELS = ["classroom", "kitchen"]
+SCENE_LABELS = ["classroom", "kitchen", "hospital", "cloth_store", "museum"]
 
 # ── Default hyper-parameters ─────────────────────────────────────────────
 BATCH_SIZE = 32
@@ -86,6 +86,30 @@ SCENE_PROMPTS = {
         "a person cooking in a kitchen",
         "a kitchen countertop with utensils",
         "a stove and a sink in a kitchen",
+    ],
+    "hospital": [
+        "a photo of a hospital ward",
+        "a photo taken inside a hospital",
+        "a hospital corridor with medical equipment",
+        "a nurse or doctor beside a hospital bed",
+        "a patient room in a hospital",
+        "a medical clinic examination room",
+    ],
+    "cloth_store": [
+        "a photo of a clothing store",
+        "a photo taken inside a clothes shop",
+        "racks of clothes hanging in a store",
+        "shelves of folded clothing in a shop",
+        "a fitting room in a clothing store",
+        "a boutique with clothes on display",
+    ],
+    "museum": [
+        "a photo of a museum",
+        "a photo taken inside a museum gallery",
+        "exhibits in glass display cases in a museum",
+        "paintings on the walls of an art gallery",
+        "a museum hall with statues and artifacts",
+        "visitors looking at museum exhibits",
     ],
 }
 

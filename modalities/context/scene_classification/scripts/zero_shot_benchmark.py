@@ -36,7 +36,13 @@ import pandas as pd
 import torch
 from PIL import Image
 
-from config import CHECKPOINT_DIR, REPORT_DIR, SCENE_LABELS
+from config import (
+    ABSTAIN_PROMPTS,
+    CHECKPOINT_DIR,
+    REPORT_DIR,
+    SCENE_LABELS,
+    SCENE_PROMPTS as PROMPTS,
+)
 from src.models import build_model
 from src.transforms import get_test_transforms
 
@@ -46,36 +52,15 @@ OUT_DIR = os.path.join(REPORT_DIR, "zero_shot")
 # Repo root: scene_classification/scripts -> repo
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                          "..", "..", "..", ".."))
-VIDEO_DIRS = {  # ground-truth label -> folder
+# Ground-truth video folders: only classes we have captured footage for.
+# The zero-shot classifier still scores against ALL of SCENE_LABELS (imported
+# from config) — this is a real regression check: adding more classes gives
+# CLIP more ways to be confused, so classroom/kitchen accuracy must be
+# re-verified whenever the vocabulary grows, not just assumed.
+VIDEO_DIRS = {
     "classroom": os.path.join(REPO_ROOT, "videos", "Classroom"),
     "kitchen": os.path.join(REPO_ROOT, "videos", "Kitchen"),
 }
-
-# ── Prompt ensembles ─────────────────────────────────────────────────────
-PROMPTS = {
-    "classroom": [
-        "a photo of a classroom",
-        "a photo taken inside a classroom",
-        "a classroom with desks and chairs",
-        "a lecture room in a university",
-        "students sitting in a classroom",
-        "a whiteboard at the front of a classroom",
-    ],
-    "kitchen": [
-        "a photo of a kitchen",
-        "a photo taken inside a kitchen",
-        "a kitchen with cabinets and appliances",
-        "a person cooking in a kitchen",
-        "a kitchen countertop with utensils",
-        "a stove and a sink in a kitchen",
-    ],
-}
-# Abstain probe: frames that are face close-ups with no visible scene.
-ABSTAIN_PROMPTS = [
-    "a close-up photo of a person's face",
-    "a selfie of a person",
-    "a portrait of a person looking at the camera",
-]
 
 
 # ── Model wrappers: each returns (probs over SCENE_LABELS, abstain_prob) ──
