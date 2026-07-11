@@ -15,7 +15,7 @@ opencv-python
 pillow
 numpy
 tqdm
-mediapipe==0.10.35 
+mediapipe==0.10.21  # last release shipping legacy mp.solutions (holistic)
 scikit-learn
 matplotlib
 seaborn

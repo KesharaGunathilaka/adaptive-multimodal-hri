@@ -118,7 +118,8 @@ def list_ntu():
 
 
 def list_custom():
-    """custom/train/<label>/ and custom/live_test/<label>/; subject = name before '__'."""
+    """custom/train/<label>/ and custom/live_test/<label>/; subject = name
+    before '__', falling back to the first '_' token (S01_F04_c001 -> S01)."""
     clips = []
     for sub, split_hint in (("train", ""), ("live_test", "live_test")):
         base = os.path.join(CUSTOM_DIR, sub)
@@ -132,7 +133,7 @@ def list_custom():
                 if os.path.splitext(fname)[1].lower() not in (".mp4", ".avi", ".mov", ".mkv"):
                     continue
                 stem = os.path.splitext(fname)[0]
-                subject = stem.split("__")[0] if "__" in stem else "unknown"
+                subject = stem.split("__")[0] if "__" in stem else stem.split("_")[0]
                 clips.append({
                     "dataset": "custom", "clip_id": f"{sub}_{label}_{stem}",
                     "path": os.path.join(label_dir, fname), "kind": "video",

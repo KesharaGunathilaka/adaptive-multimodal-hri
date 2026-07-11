@@ -183,8 +183,13 @@ Fusion-facing API, same shape as `MotionEngine`:
 **Splits** (enforced in `prepare_data.py`, stamped into the index CSVs):
 - Jester: keep official train/validation split.
 - NTU: split by **subject ID** (e.g., 20 % of subjects held out for test).
-- Custom train pool: split by subject; if most clips are one person, that
-  person goes entirely to test for those classes.
+- Custom train pool: split by subject **per label** (recorded change,
+  2026-07-11): with ≥5 subjects a label splits 70/15/15 subject-wise; with
+  2–4 subjects the last (sorted) subject is held out entirely and its clips
+  alternate val/test (eval stays subject-pure w.r.t. training); with 1
+  subject it falls back to a clip-level 70/15/15 split with a warning.
+  Custom filenames without `__` take the first `_` token as subject
+  (`S01_F04_c001.mp4` → `S01`).
 - `custom/live_test/`: never trained or tuned on; reported separately.
 
 **Augmentation** (feature-space, on-the-fly in `data.py`):
@@ -209,8 +214,11 @@ Stage-1 candidates (all < 1 M params, input `[32, 185]`):
 Starting recipe (Stage 2/3 refine): AdamW lr 1e-3, cosine schedule, wd 1e-4,
 batch 256, ≤ 100 epochs early-stopped on **val macro-F1** (class counts are
 very imbalanced — Jester thumbs ≫ custom beckoning — so macro-F1 selection +
-inverse-frequency class weights or a balanced sampler, same philosophy as the
-emotion model), label smoothing 0.1, dropout 0.3. Report accuracy, balanced
+**sqrt** inverse-frequency class weights (recorded change, 2026-07-12: raw
+inverse frequency at ~280:1 idle-vs-raise_hand made models abandon idle and
+plateau at ~60% macro-F1; sqrt softening to ~17:1 fixed it. Classes with no
+training data get weight 0, or label smoothing leaks their weight into every
+sample's loss), label smoothing 0.1, dropout 0.3. Report accuracy, balanced
 accuracy, macro-F1, per-class P/R, confusion matrix.
 
 Watch these confusion pairs specifically: `beckoning`↔`wave`,

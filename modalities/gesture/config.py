@@ -70,8 +70,8 @@ DEBOUNCE_S = 0.30           # a new label must win for this long to be emitted
 # ── Deployed model ───────────────────────────────────────────────────────
 # Single place deciding what inference loads. compare_models.py / tuning may
 # change the winner; update these two lines (and model_config.json) to ship it.
-DEFAULT_MODEL = "BiGRU"
-DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "best_BiGRU.pth")
+DEFAULT_MODEL = "TCN"
+DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "best_TCN.pth")
 DEFAULT_MODEL_CONFIG = os.path.join(CHECKPOINT_DIR, "model_config.json")
 
 # ── Display colors (BGR) for UI overlays ────────────────────────────────

@@ -78,23 +78,34 @@ def assign_splits(df):
         assign = subject_split(df.loc[nm, "subject"])
         split[nm] = df.loc[nm, "subject"].map(assign)
 
-    # custom: live_test folder wins; the rest subject-wise
+    # custom: live_test folder wins; the rest subject-wise PER LABEL, so a
+    # class recorded by few people still gets subject-pure val/test data
     cm = df["dataset"] == "custom"
     live = cm & (df["split_hint"] == "live_test")
     split[live] = "live_test"
     pool = cm & ~live
-    if pool.any():
-        subjects = df.loc[pool, "subject"]
-        if subjects.nunique() <= 3:
-            print(f"WARNING: only {subjects.nunique()} custom subjects — "
-                  "falling back to clip-level 70/15/15 split. Numbers for "
-                  "custom-only classes will be optimistic; record more people.")
-            idx = df.loc[pool].sort_values("path").index
-            frac = (np.arange(len(idx)) + 0.5) / len(idx)
-            split[idx] = np.where(frac < 0.70, "train", np.where(frac < 0.85, "val", "test"))
+    for label, part in df.loc[pool].groupby("label"):
+        subs = sorted(part["subject"].unique())
+        if len(subs) >= 5:
+            assign = subject_split(part["subject"])
+            split[part.index] = part["subject"].map(assign)
+        elif len(subs) >= 2:
+            # too few subjects for separate val AND test subjects: hold out
+            # the last subject entirely, alternating its clips val/test —
+            # eval stays subject-pure w.r.t. training
+            print(f"NOTE: custom '{label}': {len(subs)} subjects — "
+                  f"'{subs[-1]}' held out for val/test, rest train.")
+            eval_idx = part[part["subject"] == subs[-1]].sort_values("path").index
+            split[part.index.difference(eval_idx)] = "train"
+            split[eval_idx] = ["val" if i % 2 == 0 else "test"
+                               for i in range(len(eval_idx))]
         else:
-            assign = subject_split(subjects)
-            split[pool] = subjects.map(assign)
+            print(f"WARNING: custom '{label}': single subject — clip-level "
+                  "70/15/15 split; metrics will be optimistic. Record more people.")
+            idx = part.sort_values("path").index
+            frac = (np.arange(len(idx)) + 0.5) / len(idx)
+            split[idx] = np.where(frac < 0.70, "train",
+                                  np.where(frac < 0.85, "val", "test"))
 
     return split
 

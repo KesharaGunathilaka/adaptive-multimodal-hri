@@ -73,10 +73,21 @@ def load_index(split):
 
 
 def compute_class_weights(df):
-    """Inverse-frequency class weights (mean-normalized), as in the emotion model."""
-    counts = df["label_id"].value_counts().reindex(range(len(GESTURE_LABELS)), fill_value=0)
-    weights = 1.0 / np.maximum(counts.to_numpy(dtype=np.float64), 1.0)
-    weights *= len(weights) / weights.sum()
+    """Square-root inverse-frequency class weights (mean-normalized).
+
+    sqrt softens the raw inverse-frequency ratio (idle vs raise_hand is
+    ~280:1 here — raw weights make the model abandon the majority class,
+    which tanks precision everywhere). Classes with no training data get
+    weight 0 — otherwise their (huge) weight leaks into every sample's
+    loss through label smoothing and the model collapses onto the
+    untrained classes.
+    """
+    counts = df["label_id"].value_counts().reindex(
+        range(len(GESTURE_LABELS)), fill_value=0).to_numpy(dtype=np.float64)
+    present = counts > 0
+    weights = np.zeros_like(counts)
+    weights[present] = 1.0 / np.sqrt(counts[present])
+    weights[present] *= present.sum() / weights[present].sum()
     return torch.tensor(weights, dtype=torch.float32)
 
 
