@@ -1,29 +1,27 @@
 """
-Standalone real-time scene (environment) classification from a camera.
+Standalone real-time zero-shot scene (environment) classification from a camera.
 Uses an Intel RealSense camera if connected, else the default laptop webcam.
 
-SELF-CONTAINED: this file needs only the trained weights (.pth) and these pip
-packages — nothing else from the project:
-    pip install torch torchvision opencv-python numpy
+SELF-CONTAINED: no project imports and no trained weights file — CLIP weights
+auto-download on first run (~350 MB, cached). Only these pip packages:
+    pip install torch torchvision open_clip_torch opencv-python pillow numpy
     # pyrealsense2 is optional (only for a RealSense camera)
 
-Put the weights file next to this script (or pass --checkpoint), then:
+Run:
     python realtime.py
-    python realtime.py --checkpoint best_EfficientNet_B0.pth
+    python realtime.py --camera 1
 
-Method: camera frame -> 224x224 + ImageNet normalize -> model -> scene label +
-confidence, smoothed over a short rolling window.
+Method: camera frame -> CLIP image embedding -> cosine similarity against
+per-class prompt ensembles -> scene label + confidence, smoothed over a
+rolling window. Adding a scene class = adding an entry to SCENE_PROMPTS below.
 """
 import argparse
-import os
 from collections import deque
 
 import cv2
 import numpy as np
 import torch
-import torch.nn as nn
-import torchvision.models as tvm
-from torchvision import transforms
+from PIL import Image
 
 try:
     import pyrealsense2 as rs
@@ -31,43 +29,74 @@ try:
 except ImportError:
     _RS_AVAILABLE = False
 
-# ── Configuration (edit these to ship a different model) ──────────────────
-SCENE_LABELS = ["classroom", "kitchen"]
-DEFAULT_WEIGHTS = "best_EfficientNet_B0.pth"
-IMAGE_SIZE = 224
+# ── Configuration (edit prompts to add/change scene classes) ──────────────
+CLIP_MODEL = "ViT-B-32-quickgelu"
+CLIP_PRETRAINED = "openai"
+SCENE_PROMPTS = {
+    "classroom": [
+        "a photo of a classroom",
+        "a photo taken inside a classroom",
+        "a classroom with desks and chairs",
+        "a lecture room in a university",
+        "students sitting in a classroom",
+        "a whiteboard at the front of a classroom",
+    ],
+    "kitchen": [
+        "a photo of a kitchen",
+        "a photo taken inside a kitchen",
+        "a kitchen with cabinets and appliances",
+        "a person cooking in a kitchen",
+        "a kitchen countertop with utensils",
+        "a stove and a sink in a kitchen",
+    ],
+    "hospital": [
+        "a photo of a hospital ward",
+        "a photo taken inside a hospital",
+        "a hospital corridor with medical equipment",
+        "a nurse or doctor beside a hospital bed",
+        "a patient room in a hospital",
+        "a medical clinic examination room",
+    ],
+    "cloth_store": [
+        "a photo of a clothing store",
+        "a photo taken inside a clothes shop",
+        "racks of clothes hanging in a store",
+        "shelves of folded clothing in a shop",
+        "a fitting room in a clothing store",
+        "a boutique with clothes on display",
+    ],
+    "museum": [
+        "a photo of a museum",
+        "a photo taken inside a museum gallery",
+        "exhibits in glass display cases in a museum",
+        "paintings on the walls of an art gallery",
+        "a museum hall with statues and artifacts",
+        "visitors looking at museum exhibits",
+    ],
+}
 SMOOTH_WINDOW = 15
 CONF_THRESHOLD = 0.5
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SCENE_LABELS = list(SCENE_PROMPTS.keys())
 
 
-def build_model(num_classes=len(SCENE_LABELS)):
-    model = tvm.efficientnet_b0(weights=None)
-    model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
-    return model
+def load_clip(device):
+    import open_clip
 
+    model, _, preprocess = open_clip.create_model_and_transforms(
+        CLIP_MODEL, pretrained=CLIP_PRETRAINED)
+    model.to(device).eval()
+    tokenizer = open_clip.get_tokenizer(CLIP_MODEL)
 
-def get_transform():
-    return transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-
-
-def resolve_weights(name):
-    candidates = [
-        name,
-        os.path.join(SCRIPT_DIR, name),
-        os.path.join(SCRIPT_DIR, "checkpoints", name),
-        os.path.join(SCRIPT_DIR, "..", "checkpoints", name),
-    ]
-    for c in candidates:
-        if os.path.isfile(c):
-            return c
-    raise SystemExit(
-        f"Weights file '{name}' not found. Put it next to this script or pass "
-        f"--checkpoint <path>.\nLooked in:\n  " + "\n  ".join(candidates))
+    with torch.no_grad():
+        embs = []
+        for label in SCENE_LABELS:
+            e = model.encode_text(tokenizer(SCENE_PROMPTS[label]).to(device)).float()
+            e = e / e.norm(dim=-1, keepdim=True)
+            embs.append(e.mean(dim=0, keepdim=True))
+        text = torch.cat(embs)
+        text_embs = text / text.norm(dim=-1, keepdim=True)
+    return model, preprocess, text_embs
 
 
 def _try_start_realsense():
@@ -86,18 +115,14 @@ def _try_start_realsense():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--checkpoint", default=DEFAULT_WEIGHTS, help="Path to the .pth weights.")
     ap.add_argument("--camera", type=int, default=0, help="Webcam index (fallback).")
     args = ap.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt = resolve_weights(args.checkpoint)
-    model = build_model()
-    model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
-    model.to(device).eval()
-    transform = get_transform()
+    print("Loading CLIP (downloads ~350 MB on first run)...")
+    model, preprocess, text_embs = load_clip(device)
     print("=" * 60)
-    print(f" weights: {ckpt}")
+    print(f" model:   {CLIP_MODEL} ({CLIP_PRETRAINED}), zero-shot")
     print(f" device:  {device}")
     print(f" labels:  {SCENE_LABELS}")
     print("=" * 60)
@@ -129,10 +154,11 @@ def main():
                     print("Failed to read from webcam.")
                     break
 
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            tensor = transform(rgb).unsqueeze(0).to(device)
+            pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             with torch.no_grad():
-                probs = torch.softmax(model(tensor), dim=1)[0].cpu().numpy()
+                img = model.encode_image(preprocess(pil).unsqueeze(0).to(device)).float()
+                img = img / img.norm(dim=-1, keepdim=True)
+                probs = torch.softmax(100.0 * img @ text_embs.T, dim=1)[0].cpu().numpy()
             prob_history.append(probs)
             avg = np.mean(prob_history, axis=0)
             idx = int(avg.argmax())
