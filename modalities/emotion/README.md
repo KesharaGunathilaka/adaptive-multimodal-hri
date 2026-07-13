@@ -70,7 +70,7 @@ This saves `best_MobileNetV2.pth` (the default path the scripts load). Then:
 
 ```bash
 python scripts/evaluate.py                                   # reproduce the report
-python inference/video.py --video ../../videos/classroom/1/20260511_160401.mp4
+python inference/video.py --video ../../videos/Classroom/1/20260511_160401.mp4
 ```
 
 **Deployed model: MobileNetV2 fine-tuned on real-world footage**
@@ -151,7 +151,7 @@ Every script supports `--help`. Useful flags:
 python inference/realtime_realsense.py --model EfficientNet-B0
 
 # Annotate a video file (writes to outputs/)
-python inference/video.py --video ../../videos/classroom/1/20260511_160401.mp4
+python inference/video.py --video ../../videos/Classroom/1/20260511_160401.mp4
 ```
 
 Both scripts use MediaPipe face detection — **full-range first**

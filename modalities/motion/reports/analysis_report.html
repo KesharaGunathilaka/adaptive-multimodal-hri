@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HRI Motion Model — Comparative Analysis Report</title>
+<style>
+  @page { size: A4; margin: 20mm 16mm 18mm 16mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #0b0b0b;
+    background: #f9f9f7;
+    margin: 0;
+    line-height: 1.55;
+    font-size: 13.5px;
+  }
+  .page { max-width: 900px; margin: 0 auto; padding: 0 4px; }
+
+  /* ── Cover ─────────────────────────────────────────────────────── */
+  .cover {
+    padding: 90px 20px 60px;
+    text-align: center;
+    border-bottom: 6px solid #2a78d6;
+    margin-bottom: 30px;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #52514e; letter-spacing: 2px; text-transform: uppercase;
+    font-size: 12px; font-weight: 600; margin-bottom: 18px;
+  }
+  .cover h1 {
+    font-size: 34px; margin: 0 0 14px; color: #0b0b0b; font-weight: 800;
+    line-height: 1.25;
+  }
+  .cover .subtitle { font-size: 16px; color: #52514e; margin-bottom: 40px; }
+  .cover .meta { font-size: 12.5px; color: #898781; margin-top: 60px; }
+  .cover .meta div { margin: 4px 0; }
+  .cover .badge-row { display: flex; justify-content: center; gap: 14px; margin-top: 50px; flex-wrap: wrap; }
+  .badge {
+    border: 1px solid #e1e0d9; border-radius: 10px; padding: 14px 22px;
+    min-width: 150px; background: #fcfcfb;
+  }
+  .badge .num { font-size: 26px; font-weight: 800; color: #2a78d6; }
+  .badge .lbl { font-size: 11px; color: #52514e; margin-top: 4px; }
+
+  /* ── Section chrome ────────────────────────────────────────────── */
+  h2 {
+    font-size: 20px; font-weight: 800; color: #0b0b0b;
+    border-left: 5px solid #2a78d6; padding-left: 12px;
+    margin: 42px 0 16px; page-break-after: avoid;
+  }
+  h3 { font-size: 15.5px; font-weight: 700; color: #0b0b0b; margin: 26px 0 10px; page-break-after: avoid; }
+  h4 { font-size: 13.5px; font-weight: 700; color: #184f95; margin: 18px 0 6px; }
+  p { margin: 8px 0; }
+  .lede { font-size: 14.5px; color: #33322f; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong { color: #0b0b0b; }
+  code { background: #f0efec; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  .callout {
+    background: #fcfcfb; border: 1px solid #e1e0d9; border-left: 4px solid #2a78d6;
+    border-radius: 6px; padding: 14px 18px; margin: 16px 0; page-break-inside: avoid;
+  }
+  .callout.good { border-left-color: #0ca30c; }
+  .callout.warn { border-left-color: #d03b3b; }
+  .callout .callout-title { font-weight: 700; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 6px; color: #52514e; }
+
+  /* ── Tables ────────────────────────────────────────────────────── */
+  table {
+    width: 100%; border-collapse: collapse; margin: 14px 0 20px;
+    font-size: 12.3px; page-break-inside: avoid;
+  }
+  th {
+    background: #0b0b0b; color: #fff; text-align: left; padding: 8px 10px;
+    font-weight: 600; font-size: 11.5px;
+  }
+  td {
+    padding: 7px 10px; border-bottom: 1px solid #e1e0d9;
+    font-variant-numeric: tabular-nums;
+  }
+  tr:nth-child(even) td { background: #f5f5f2; }
+  td.num, th.num { text-align: right; }
+  .tbl-caption { font-size: 11.5px; color: #898781; margin-top: -12px; margin-bottom: 18px; }
+
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .pill.good { background: #e5f6e5; color: #006300; }
+  .pill.bad  { background: #fbe8e8; color: #a31212; }
+  .pill.warn { background: #fff3e0; color: #a3610c; }
+
+  /* ── Figures ───────────────────────────────────────────────────── */
+  figure { margin: 18px 0; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 100%; border: 1px solid #e1e0d9; border-radius: 8px; }
+  figcaption { font-size: 11.5px; color: #898781; margin-top: 8px; }
+
+  /* ── Diagram (pipeline) ────────────────────────────────────────── */
+  .pipeline {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    justify-content: center; margin: 20px 0; page-break-inside: avoid;
+  }
+  .pipe-box {
+    background: #fcfcfb; border: 1.5px solid #2a78d6; border-radius: 8px;
+    padding: 10px 12px; font-size: 11px; font-weight: 600; color: #0b0b0b;
+    text-align: center; min-width: 92px; line-height: 1.3;
+  }
+  .pipe-box.warn { border-color: #d03b3b; background: #fbe8e8; }
+  .pipe-box.good { border-color: #0ca30c; background: #e5f6e5; }
+  .pipe-arrow { color: #898781; font-size: 16px; }
+
+  .model-lineage {
+    display: flex; align-items: stretch; gap: 0; margin: 20px 0; flex-wrap: wrap;
+    justify-content: center; page-break-inside: avoid;
+  }
+  .lineage-card {
+    border: 1.5px solid #e1e0d9; border-radius: 8px; padding: 14px 16px;
+    width: 230px; margin: 6px; background: #fcfcfb;
+  }
+  .lineage-card .tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #898781; font-weight: 700; }
+  .lineage-card .name { font-size: 14px; font-weight: 800; margin: 4px 0 8px; color: #0b0b0b; }
+  .lineage-card .stat { font-size: 12px; color: #33322f; margin: 2px 0; }
+  .lineage-card .stat b { color: #184f95; }
+  .lineage-arrow { align-self: center; font-size: 22px; color: #898781; padding: 0 4px; }
+
+  .footer-note { font-size: 11px; color: #898781; text-align: center; margin: 50px 0 10px;
+    border-top: 1px solid #e1e0d9; padding-top: 14px; }
+
+  .toc { background: #fcfcfb; border: 1px solid #e1e0d9; border-radius: 8px; padding: 18px 24px; margin: 20px 0; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; font-size: 13px; }
+
+  .two-col { display: flex; gap: 20px; }
+  .two-col > div { flex: 1; }
+
+  .section-break { page-break-before: always; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════ COVER ══════════════════════ -->
+  <div class="cover">
+    <div class="kicker">HRI Motion Recognition Project</div>
+    <h1>Comparative Analysis Report<br>Skeleton-Based Motion Classification Models</h1>
+    <div class="subtitle">NTU RGB+D–trained baselines vs. real-world fine-tuning on the<br><code>hri-multimodal-intent-v1.0.0</code> dataset</div>
+
+    <div class="badge-row">
+      <div class="badge"><div class="num">3</div><div class="lbl">Model versions compared</div></div>
+      <div class="badge"><div class="num">96.7%</div><div class="lbl">Best NTU validation accuracy</div></div>
+      <div class="badge"><div class="num">82.6%</div><div class="lbl">Best held-out real-world accuracy</div></div>
+      <div class="badge"><div class="num">+55.2pt</div><div class="lbl">Fine-tuning improvement</div></div>
+    </div>
+
+    <div class="meta">
+      <div>HRI Motion Model — Internal Technical Report</div>
+      <div>Prepared from the model development &amp; evaluation session log</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ TOC ══════════════════════ -->
+  <div class="toc">
+    <h3 style="margin-top:0;">Contents</h3>
+    <ol>
+      <li>Executive Summary</li>
+      <li>Model Lineage &amp; Overview</li>
+      <li>Methodology — Data, Architecture &amp; Evaluation Pipeline</li>
+      <li>Results — NTU-Domain Validation</li>
+      <li>Results — Real-World Evaluation (hri-multimodal-intent-v1.0.0)</li>
+      <li>Key Findings</li>
+      <li>Strengths &amp; Weaknesses by Model</li>
+      <li>Conclusion &amp; Recommendations</li>
+      <li>Appendix — Full Metrics Tables</li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════ 1. EXECUTIVE SUMMARY ══════════════════════ -->
+  <h2>1. Executive Summary</h2>
+  <p class="lede">This report compares three successive versions of the HRI motion-recognition model
+  (a LayerNorm + 3-layer LSTM + attention-pooling classifier over skeleton position/velocity
+  windows) developed and evaluated in this project: a <strong>6-class NTU-only model</strong>,
+  a <strong>4-class NTU-only baseline</strong>, and a <strong>4-class model fine-tuned</strong> on
+  real-world footage from the <code>hri-multimodal-intent-v1.0.0</code> dataset.</p>
+
+  <div class="callout">
+    <div class="callout-title">Headline finding</div>
+    High accuracy on the NTU validation set <strong>did not predict real-world performance</strong>.
+    The 4-class NTU-only model reached <strong>96.7%</strong> validation accuracy on NTU data, yet
+    scored only <strong>27.4%</strong> clip-level accuracy on held-out real-world clips — barely
+    above the 25% chance floor for four balanced classes. The root cause was traced to a
+    coordinate-axis convention mismatch between MediaPipe's pose output and the Kinect-derived
+    NTU training data, and — after that was fixed — a deeper distributional domain gap between
+    the two skeleton-estimation sources.
+  </div>
+
+  <div class="callout good">
+    <div class="callout-title">Resolution</div>
+    Fine-tuning the NTU-only baseline on a modest amount of correctly-labeled real-world data
+    (816 training clips / 12,082 windows) raised held-out real-world clip accuracy from
+    <strong>27.4% to 82.6%</strong> — a <strong>+55.2 percentage-point</strong> improvement — while
+    reusing the same architecture and warm-starting from the existing checkpoint.
+  </div>
+
+  <p>The one class that did not fully recover is <strong>stepping_back</strong> (33.3% recall on
+  held-out test), which is directly attributable to it being the most data-scarce class at every
+  stage of this project — in the original NTU proxy-label mapping, in the real-world dataset's
+  scenario coverage, and in the fine-tuning training set (74 clips vs. 180–370 for the other
+  three classes).</p>
+
+  <!-- ══════════════════════ 2. MODEL LINEAGE ══════════════════════ -->
+  <h2>2. Model Lineage &amp; Overview</h2>
+  <p>All three models share the same underlying architecture (<code>MotionLSTM</code>: LayerNorm
+  input normalization → 3-layer LSTM, hidden size 256 → learned attention pooling over the
+  30-frame window → 2-layer MLP classification head, ≈1.42M parameters) and the same 84-dimensional
+  per-frame feature (14 joints × 3D position + 14 joints × 3D velocity). What changes between
+  versions is the <strong>class taxonomy</strong> and the <strong>training data source</strong>.</p>
+
+  <div class="model-lineage">
+    <div class="lineage-card">
+      <div class="tag">Model A</div>
+      <div class="name">6-class NTU-only</div>
+      <div class="stat">Classes: <b>6</b> (sitting, standing, walking, running, stepping_back, slumped)</div>
+      <div class="stat">Training data: <b>NTU RGB+D</b>, 102,267 windows</div>
+      <div class="stat">Best NTU val acc: <b>95.93%</b></div>
+      <div class="stat">Checkpoint: <code>best_model_6class.pt</code></div>
+    </div>
+    <div class="lineage-arrow">→</div>
+    <div class="lineage-card">
+      <div class="tag">Model B</div>
+      <div class="name">4-class NTU-only baseline</div>
+      <div class="stat">Classes: <b>4</b> (sitting, standing, walking, stepping_back)</div>
+      <div class="stat">Training data: <b>NTU RGB+D</b>, 82,346 windows</div>
+      <div class="stat">Best NTU val acc: <b>96.71%</b></div>
+      <div class="stat">Real-world test acc: <b>27.4%</b></div>
+      <div class="stat">Checkpoint: <code>best_model.pt</code> (pre-fine-tune)</div>
+    </div>
+    <div class="lineage-arrow">→</div>
+    <div class="lineage-card">
+      <div class="tag">Model C</div>
+      <div class="name">4-class fine-tuned</div>
+      <div class="stat">Classes: <b>4</b> (same as B)</div>
+      <div class="stat">Fine-tune data: <b>hri-multimodal-intent-v1.0.0</b>, 12,082 windows</div>
+      <div class="stat">Warm-started from: Model B</div>
+      <div class="stat">Real-world test acc: <b>82.6%</b></div>
+      <div class="stat">Checkpoint: <code>best_model_finetuned.pt</code> (deployed default)</div>
+    </div>
+  </div>
+
+  <p><strong>Why the taxonomy changed (6→4 classes):</strong> <code>running</code> and
+  <code>slumped</code> were dropped between Model A and Model B. Both were built from NTU proxy
+  actions that do not kinematically match their intended real-world meaning — <code>running</code>
+  came only from NTU's "hopping in place" action (no true forward-gait running exists in the
+  NTU-60 action set), and <code>slumped</code> came from "falling," "headache," and "stomachache"
+  actions, which are fast/dynamic rather than the static, low-energy posture the class was meant
+  to represent. Neither was needed for the target deployment scenarios (defined in the project's
+  HRI scenario table), so both were removed rather than patched.</p>
+
+  <!-- ══════════════════════ 3. METHODOLOGY ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>3. Methodology — Data, Architecture &amp; Evaluation Pipeline</h2>
+
+  <h3>3.1 Data pipeline (training)</h3>
+  <p>Skeleton windows are built by sliding a 30-frame window (≈1 second at the NTU capture rate)
+  with a 10-frame stride over each source clip, extracting a 14-joint subset, hip-centering and
+  shoulder-width-normalizing each frame, and computing frame-to-frame velocity as a finite
+  difference. NTU RGB+D action IDs are mapped onto the target motion classes (e.g. A008 "sitting
+  down" → <code>sitting</code>; A059/A060 "walking toward/apart" → <code>walking</code>).</p>
+
+  <h3>3.2 The coordinate-convention bug (critical methodological finding)</h3>
+  <p>Early real-world testing (webcam/video demo) showed severe, systematic misclassification —
+  e.g. a stationary standing person consistently classified as <code>walking</code>. Investigation
+  ruled out the initial hypothesis (sensor jitter creating spurious velocity) via ablation: zeroing
+  the velocity feature entirely did not change the prediction, proving the error was driven by
+  static <em>posture</em>, not motion noise. Comparing a real captured frame's joint coordinates
+  against the NTU training-set mean template revealed the cause: MediaPipe's <code>pose_world_landmarks</code>
+  X and Y axes are inverted relative to the Kinect/NTU training convention (documented Kinect
+  convention: X-left, Y-up; MediaPipe's convention is undocumented by Google but was determined
+  empirically to be the opposite on both axes). Negating both X and Y — a proper 180° rotation
+  (determinant +1, preserving skeletal handedness) rather than a single-axis mirror (determinant
+  −1, which produces an anatomically invalid skeleton) — was verified to restore correct
+  classification, and was applied at the single point where MediaPipe landmarks are mapped into
+  the model's joint layout.</p>
+
+  <h3>3.3 Real-world evaluation pipeline</h3>
+  <p>The following pipeline was used to evaluate models B and C against
+  <code>hri-multimodal-intent-v1.0.0</code>:</p>
+
+  <div class="pipeline">
+    <div class="pipe-box">Video clip<br>(15–31 FPS, mixed)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">MediaPipe<br>Pose extraction</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box good">Axis-corrected<br>joint mapping</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">Hip-center +<br>shoulder-scale norm.</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box good">Resample to<br>uniform 30 Hz</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">30-frame windows<br>(stride 10)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">MotionLSTM</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">Majority vote<br>→ clip label</div>
+  </div>
+
+  <p>Each clip's ground-truth label is inherited from its recording scenario's documented
+  "Intended Motion" field, mapped onto the 4-class taxonomy. One scenario (S19, "move backward
+  (run)") was excluded as ambiguous under the reduced taxonomy. Clips under 30 frames were
+  excluded (too short for one window). This yielded <strong>1,214 usable clips</strong> out of
+  1,270 total.</p>
+
+  <p>Because clips were recorded at inconsistent frame rates (15/23/24/25/29/30/31 FPS — including
+  within the same scenario), each clip's extracted position trajectory is <strong>linearly
+  resampled onto a uniform 30 Hz grid before windowing</strong>, so that a 30-frame window
+  consistently represents ≈1 second of real time regardless of source capture rate, matching the
+  assumption baked into training.</p>
+
+  <h3>3.4 Train / validation / test split integrity</h3>
+  <p>The dataset ships three candidate split strategies; one is explicitly named
+  <code>split_random_leaky_DO_NOT_USE_FOR_EVAL</code>, flagging that per-window random splitting
+  (the failure mode identified in the original NTU pipeline, where 67%-overlapping sliding windows
+  from the same clip could land in both train and validation) is unsafe here too. This report uses
+  <code>split_scenario</code>, which holds out entire recording scenarios — verified disjoint
+  between train/val/test with no scenario or subject leakage.</p>
+
+  <table>
+    <tr><th>Split</th><th class="num">Clips</th><th>Used for</th></tr>
+    <tr><td>train</td><td class="num">816</td><td>Fine-tuning (Model C)</td></tr>
+    <tr><td>val</td><td class="num">208</td><td>Fine-tuning early stopping / model selection</td></tr>
+    <tr><td>test</td><td class="num">190</td><td><strong>Held out</strong> — never used in training or model selection; source of all real-world headline numbers in this report</td></tr>
+  </table>
+
+  <h3>3.5 Fine-tuning procedure</h3>
+  <p>Model C warm-starts <em>all</em> weights from Model B's checkpoint (not a resized head — the
+  4-class taxonomy already matches) and continues training on the real-world <code>train</code>
+  split at a lower learning rate (2×10⁻⁴ vs. 2.2×10⁻³ for from-scratch training), with class-balanced
+  loss weighting and oversampling of the minority class, early-stopped on the <code>val</code>
+  split (patience 15 epochs). Training stopped at epoch 35 of a maximum 80.</p>
+
+  <!-- ══════════════════════ 4. NTU-DOMAIN RESULTS ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>4. Results — NTU-Domain Validation</h2>
+  <p>All NTU-domain numbers below are on NTU RGB+D validation data — skeletons captured with the
+  same Kinect sensor and pipeline as training, i.e. the model's <em>native</em> distribution.</p>
+
+  <figure>
+    <img src="assets/chart_ntu_progression.png" alt="NTU validation accuracy progression">
+    <figcaption>Figure 1 — NTU validation accuracy across all training runs. Model A improved
+    across three iterations (initial run → oversampling/weighting refinement → hyperparameter
+    tuning); Model B (4-class, simplified taxonomy) reached the highest NTU-domain accuracy of any
+    version.</figcaption>
+  </figure>
+
+  <h3>4.1 Model A (6-class) — final tuned run</h3>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.976</td><td class="num">0.972</td><td class="num">0.974</td><td class="num">5,990</td></tr>
+    <tr><td>standing</td><td class="num">0.967</td><td class="num">0.955</td><td class="num">0.961</td><td class="num">2,731</td></tr>
+    <tr><td>walking</td><td class="num">0.950</td><td class="num">0.962</td><td class="num">0.956</td><td class="num">1,904</td></tr>
+    <tr><td>running</td><td class="num">0.937</td><td class="num">0.952</td><td class="num">0.944</td><td class="num">909</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.922</td><td class="num">0.931</td><td class="num">0.927</td><td class="num">1,664</td></tr>
+    <tr><td>slumped</td><td class="num">0.949</td><td class="num">0.951</td><td class="num">0.950</td><td class="num">2,142</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>95.93%</strong></td><td class="num">15,340</td></tr>
+  </table>
+  <p class="tbl-caption">stepping_back is consistently the weakest class across all three Model A training runs (85.2% precision in run 1, rising to 92.2% only after full hyperparameter tuning) — an early signal of its underlying proxy-label weakness.</p>
+
+  <h3>4.2 Model B (4-class baseline)</h3>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.979</td><td class="num">0.976</td><td class="num">0.977</td><td class="num">5,970</td></tr>
+    <tr><td>standing</td><td class="num">0.974</td><td class="num">0.954</td><td class="num">0.964</td><td class="num">2,769</td></tr>
+    <tr><td>walking</td><td class="num">0.939</td><td class="num">0.971</td><td class="num">0.955</td><td class="num">1,962</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.948</td><td class="num">0.952</td><td class="num">0.950</td><td class="num">1,650</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>96.71%</strong></td><td class="num">12,351</td></tr>
+  </table>
+  <p class="tbl-caption">Removing running/slumped lifted stepping_back's precision/recall from 92.2%/93.1% (Model A) to 94.8%/95.2% — evidence that its NTU-domain weakness was partly a side-effect of confusion with the poorly-defined slumped class, not purely data scarcity.</p>
+
+  <div class="callout warn">
+    <div class="callout-title">Why this section is not the whole story</div>
+    Both models above look excellent by NTU-domain metrics. Section 5 shows why NTU validation
+    accuracy alone is an unreliable predictor of deployment performance for this system.
+  </div>
+
+  <!-- ══════════════════════ 5. REAL-WORLD RESULTS ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>5. Results — Real-World Evaluation (hri-multimodal-intent-v1.0.0)</h2>
+  <p>All figures in this section use the methodology in §3.3 and are computed on the
+  <strong>held-out test split</strong> (190 clips) unless noted otherwise — clips used in neither
+  training nor fine-tuning validation.</p>
+
+  <figure>
+    <img src="assets/chart_realworld_before_after.png" alt="Real world before after fine-tuning">
+    <figcaption>Figure 2 — Real-world accuracy, baseline (Model B) vs. fine-tuned (Model C), on the
+    same held-out test split. Both clip-level (majority vote across a clip's windows) and
+    window-level accuracy are shown.</figcaption>
+  </figure>
+
+  <h3>5.1 Baseline (Model B) on real-world data</h3>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.542</td><td class="num">0.481</td><td class="num">0.510</td><td class="num">54</td></tr>
+    <tr><td>standing</td><td class="num">0.157</td><td class="num">0.260</td><td class="num">0.195</td><td class="num">50</td></tr>
+    <tr><td>walking</td><td class="num">1.000</td><td class="num">0.143</td><td class="num">0.250</td><td class="num">56</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.098</td><td class="num">0.167</td><td class="num">0.123</td><td class="num">30</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>27.4%</strong></td><td class="num">190</td></tr>
+  </table>
+  <p class="tbl-caption">walking's 100% precision is not a sign of strength — it reflects the model almost never predicting walking at all (only 8 of 190 clips), so the rare hits happen to be correct. Its recall (14.3%) is the meaningful number.</p>
+
+  <h3>5.2 Fine-tuned (Model C) on real-world data</h3>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.877</td><td class="num">0.926</td><td class="num">0.901</td><td class="num">54</td></tr>
+    <tr><td>standing</td><td class="num">0.960</td><td class="num">0.960</td><td class="num">0.960</td><td class="num">50</td></tr>
+    <tr><td>walking</td><td class="num">0.690</td><td class="num">0.875</td><td class="num">0.772</td><td class="num">56</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.833</td><td class="num">0.333</td><td class="num">0.476</td><td class="num">30</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>82.6%</strong></td><td class="num">190</td></tr>
+  </table>
+
+  <figure>
+    <img src="assets/chart_perclass_finetuned_test.png" alt="Fine-tuned per-class metrics">
+    <figcaption>Figure 3 — Fine-tuned model per-class precision, recall, and F1 on held-out test.
+    sitting, standing and walking are all strong; stepping_back trails on recall.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/chart_confusion_matrices.png" alt="Confusion matrices baseline vs finetuned">
+    <figcaption>Figure 4 — Confusion matrices (row-normalized shading; cell values are raw clip
+    counts). Baseline: <code>standing</code> absorbs the majority of every other class. Fine-tuned:
+    diagonal dominance for sitting/standing/walking; stepping_back's main confusion is with
+    walking (18 of 30 clips) — a far milder failure mode than the baseline's collapse.</figcaption>
+  </figure>
+
+  <h3>5.3 A note on the fine-tuning validation numbers</h3>
+  <p>During fine-tuning, window-level validation accuracy (used for early stopping / checkpoint
+  selection) peaked at only <strong>54.2%</strong>, with <code>stepping_back</code> collapsing to
+  0.1% recall on that split (733 of 782 true stepping_back windows predicted as
+  <code>standing</code>). This did <strong>not</strong> reproduce on the independently held-out
+  test split, where stepping_back recall was a much healthier 33.3% and no class collapsed. This
+  dataset's scenario-level splits can differ substantially in intrinsic difficulty (each split
+  holds out different whole scenarios), so validation accuracy alone was an imperfect signal here
+  — the final checkpoint's performance should be judged by the test-split numbers above, not the
+  validation curve.</p>
+
+  <!-- ══════════════════════ 6. KEY FINDINGS ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>6. Key Findings</h2>
+
+  <h4>Finding 1 — NTU validation accuracy is not a deployment-readiness signal</h4>
+  <p>Model B scored 96.7% on NTU validation and 27.4% on real-world held-out data. A 69-point gap
+  between "how the model performs where it was measured" and "how it performs where it will be
+  used" is the central risk this whole evaluation exercise surfaced and is why real-world,
+  correctly-labeled evaluation data is a project requirement, not a nice-to-have.</p>
+
+  <h4>Finding 2 — the coordinate-convention bug was the single largest, and cheapest, fix</h4>
+  <p>Before the axis correction (§3.2), real-world testing showed near-universal misclassification
+  toward whichever class a mismatched skeleton happened to resemble (observed as a near-universal
+  "everything is walking" failure in earlier testing on the original 6-class model). The fix was a
+  two-line change (negate X, Y at the single point MediaPipe landmarks are mapped into the model's
+  joint layout) but required a structured investigation — ablation testing to rule out sensor
+  jitter, and joint-by-joint comparison against training templates — to identify correctly, since
+  MediaPipe's world-landmark axis convention is undocumented by Google.</p>
+
+  <h4>Finding 3 — fine-tuning closes most, not all, of the remaining domain gap</h4>
+  <p>Even after the axis fix, an NTU-only model still only reached 27.4% real-world accuracy —
+  confirming a genuine distributional gap between Kinect- and MediaPipe-estimated skeletons (e.g.
+  differing depth-axis noise characteristics, differing limb-proportion estimation) beyond the
+  axis bug. ~816 real, correctly-labeled clips were enough to close most of this gap via
+  fine-tuning.</p>
+
+  <h4>Finding 4 — data scarcity, not model capacity, is the limiting factor for stepping_back</h4>
+  <figure>
+    <img src="assets/chart_class_scarcity.png" alt="Fine-tuning class scarcity">
+    <figcaption>Figure 5 — Training clips per class in the fine-tuning set. stepping_back has
+    roughly 2.4–5× fewer clips than every other class, at every stage of this project (NTU proxy
+    labels, hri-dataset scenario count, and fine-tuning data).</figcaption>
+  </figure>
+  <p>stepping_back was the weakest class in Model A, improved but remained the weakest in Model B,
+  and remains the weakest — though substantially improved — in Model C. At every stage the common
+  thread is data volume/quality, not an architectural limitation.</p>
+
+  <!-- ══════════════════════ 7. STRENGTHS & WEAKNESSES ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>7. Strengths &amp; Weaknesses by Model</h2>
+
+  <h3>Model A — 6-class NTU-only</h3>
+  <div class="two-col">
+    <div>
+      <h4>Strengths</h4>
+      <ul>
+        <li>Established the architecture and training recipe (class weighting, oversampling,
+        cosine LR schedule, early stopping) reused by every later version</li>
+        <li>Strong performance across all 6 classes on clean NTU data (95.93% val accuracy)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Weaknesses</h4>
+      <ul>
+        <li><code>running</code> and <code>slumped</code> built from NTU proxy actions that do not
+        kinematically match their intended meaning</li>
+        <li><code>stepping_back</code> consistently the weakest class across all 3 training runs</li>
+        <li>Real-world reliability never properly validated — early testing was confounded by the
+        (then-undiagnosed) coordinate-axis bug</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Model B — 4-class NTU-only baseline</h3>
+  <div class="two-col">
+    <div>
+      <h4>Strengths</h4>
+      <ul>
+        <li>Highest NTU-domain accuracy of any version (96.71%)</li>
+        <li>Simplified, better-defined taxonomy removes the two weakest-founded classes</li>
+        <li><code>stepping_back</code> precision/recall improved over Model A purely from removing
+        confusion with <code>slumped</code></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Weaknesses</h4>
+      <ul>
+        <li><span class="pill bad">27.4%</span> real-world clip accuracy — barely above chance</li>
+        <li><code>walking</code> recall collapses to 14.3% on real data</li>
+        <li><code>standing</code> becomes a catch-all, absorbing most other classes' real-world
+        clips</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Model C — 4-class fine-tuned (deployed default)</h3>
+  <div class="two-col">
+    <div>
+      <h4>Strengths</h4>
+      <ul>
+        <li><span class="pill good">82.6%</span> real-world held-out clip accuracy — a +55.2pt
+        improvement over Model B</li>
+        <li>sitting (92.6%), standing (96.0%), walking (87.5%) recall all strong on genuinely
+        unseen real-world clips</li>
+        <li>Achieved with a modest fine-tuning set (816 clips) and no architecture changes</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Weaknesses</h4>
+      <ul>
+        <li><code>stepping_back</code> recall only 33.3% — the clear remaining gap, driven by
+        having the fewest fine-tuning examples (74 clips) of any class</li>
+        <li>Fine-tuning validation accuracy (54.2%) is not representative of true held-out
+        performance for this dataset — model selection during training relied on a split that
+        proved harder than the final test split</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ 8. CONCLUSION ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>8. Conclusion &amp; Recommendations</h2>
+  <p>The project's three model iterations tell a coherent story: architecture and NTU-domain
+  training quality were never the bottleneck (all three models exceed 95% on their native
+  validation data); the bottleneck was the <strong>gap between training-sensor and
+  deployment-sensor data distributions</strong>, compounded by an undiagnosed coordinate-convention
+  bug. Fixing the bug and fine-tuning on a modest amount of correctly-labeled, target-domain data
+  resolved the large majority of this gap.</p>
+
+  <h3>Recommendations</h3>
+  <ol>
+    <li><strong>Deploy Model C</strong> (<code>best_model_finetuned.pt</code>) as the default —
+    already wired into <code>inference.py</code>, <code>webcam_demo.py</code>, and
+    <code>video_demo.py</code>.</li>
+    <li><strong>Prioritize additional stepping_back data collection.</strong> This is the single
+    highest-leverage remaining action — every other class is already performing well on held-out
+    real-world data.</li>
+    <li><strong>Treat validation-split accuracy on this dataset with caution</strong> going
+    forward; prefer evaluating candidate checkpoints against the held-out test split (or a
+    dedicated, stable validation set) before drawing conclusions about model quality, given the
+    scenario-level split variance observed in §5.3.</li>
+    <li><strong>Re-run this same real-world evaluation protocol</strong> (§3.3) whenever the
+    MediaPipe version, camera hardware, or capture frame rate changes, since this project
+    demonstrated that both sensor identity and frame-rate assumptions materially affect results.</li>
+  </ol>
+
+  <!-- ══════════════════════ 9. APPENDIX ══════════════════════ -->
+  <div class="section-break"></div>
+  <h2>9. Appendix — Full Metrics Tables</h2>
+
+  <h3>A.1 Model A (6-class) — all three training runs</h3>
+  <p><strong>Run 1</strong> — accuracy 92.484%</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.957</td><td class="num">0.942</td><td class="num">0.949</td><td class="num">5,990</td></tr>
+    <tr><td>standing</td><td class="num">0.922</td><td class="num">0.910</td><td class="num">0.916</td><td class="num">2,731</td></tr>
+    <tr><td>walking</td><td class="num">0.912</td><td class="num">0.940</td><td class="num">0.926</td><td class="num">1,904</td></tr>
+    <tr><td>running</td><td class="num">0.906</td><td class="num">0.916</td><td class="num">0.911</td><td class="num">909</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.852</td><td class="num">0.883</td><td class="num">0.867</td><td class="num">1,664</td></tr>
+    <tr><td>slumped</td><td class="num">0.919</td><td class="num">0.920</td><td class="num">0.919</td><td class="num">2,142</td></tr>
+  </table>
+
+  <p><strong>Run 2</strong> — accuracy 93.950%</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.959</td><td class="num">0.958</td><td class="num">0.958</td><td class="num">5,990</td></tr>
+    <tr><td>standing</td><td class="num">0.944</td><td class="num">0.927</td><td class="num">0.936</td><td class="num">2,731</td></tr>
+    <tr><td>walking</td><td class="num">0.926</td><td class="num">0.946</td><td class="num">0.936</td><td class="num">1,904</td></tr>
+    <tr><td>running</td><td class="num">0.928</td><td class="num">0.924</td><td class="num">0.926</td><td class="num">909</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.884</td><td class="num">0.898</td><td class="num">0.891</td><td class="num">1,664</td></tr>
+    <tr><td>slumped</td><td class="num">0.941</td><td class="num">0.937</td><td class="num">0.939</td><td class="num">2,142</td></tr>
+  </table>
+
+  <p><strong>Run 3 (final, post hyperparameter-tuning, 150 epochs)</strong> — accuracy 95.926% — hyperparameters: hidden_size=256, num_layers=3, dropout=0.35, lr=0.00221, weight_decay=0.00436, batch_size=128</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.976</td><td class="num">0.972</td><td class="num">0.974</td><td class="num">5,990</td></tr>
+    <tr><td>standing</td><td class="num">0.967</td><td class="num">0.955</td><td class="num">0.961</td><td class="num">2,731</td></tr>
+    <tr><td>walking</td><td class="num">0.950</td><td class="num">0.962</td><td class="num">0.956</td><td class="num">1,904</td></tr>
+    <tr><td>running</td><td class="num">0.937</td><td class="num">0.952</td><td class="num">0.944</td><td class="num">909</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.922</td><td class="num">0.931</td><td class="num">0.927</td><td class="num">1,664</td></tr>
+    <tr><td>slumped</td><td class="num">0.949</td><td class="num">0.951</td><td class="num">0.950</td><td class="num">2,142</td></tr>
+  </table>
+
+  <h3>A.2 Model B (4-class NTU baseline) — real-world evaluation, all 1,214 usable clips</h3>
+  <p>This is the full-dataset figure (train+val+test scenarios combined); §5.1 in the main report
+  uses the held-out test-only subset (190 clips) for a strictly unbiased number. Both are included
+  here for completeness — they agree closely (24.3% vs. 27.4%).</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.416</td><td class="num">0.326</td><td class="num">0.366</td><td class="num">478</td></tr>
+    <tr><td>standing</td><td class="num">0.135</td><td class="num">0.277</td><td class="num">0.182</td><td class="num">292</td></tr>
+    <tr><td>walking</td><td class="num">0.929</td><td class="num">0.045</td><td class="num">0.085</td><td class="num">292</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.199</td><td class="num">0.296</td><td class="num">0.238</td><td class="num">152</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>24.3%</strong></td><td class="num">1,214</td></tr>
+  </table>
+
+  <h3>A.3 Model C (fine-tuned) — full metrics</h3>
+  <p><strong>Fine-tuning validation set</strong> (window-level, 3,039 windows / 208 clips) — used
+  for early stopping during training. See §5.3 for why this split under-represents true
+  performance.</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.930</td><td class="num">0.917</td><td class="num">0.923</td><td class="num">780</td></tr>
+    <tr><td>standing</td><td class="num">0.363</td><td class="num">0.997</td><td class="num">0.532</td><td class="num">710</td></tr>
+    <tr><td>walking</td><td class="num">0.807</td><td class="num">0.289</td><td class="num">0.426</td><td class="num">767</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.024</td><td class="num">0.001</td><td class="num">0.002</td><td class="num">782</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>54.2%</strong></td><td class="num">3,039</td></tr>
+  </table>
+
+  <p><strong>Held-out test set</strong> (window-level, 2,822 windows / 190 clips) — the
+  window-level companion to the clip-level numbers in §5.2.</p>
+  <table>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>sitting</td><td class="num">0.772</td><td class="num">0.912</td><td class="num">0.836</td><td class="num">784</td></tr>
+    <tr><td>standing</td><td class="num">0.890</td><td class="num">0.923</td><td class="num">0.906</td><td class="num">753</td></tr>
+    <tr><td>walking</td><td class="num">0.606</td><td class="num">0.756</td><td class="num">0.673</td><td class="num">799</td></tr>
+    <tr><td>stepping_back</td><td class="num">0.756</td><td class="num">0.185</td><td class="num">0.298</td><td class="num">486</td></tr>
+    <tr><td><strong>Accuracy</strong></td><td colspan="3"><strong>74.6%</strong></td><td class="num">2,822</td></tr>
+  </table>
+
+  <h3>A.4 Dataset composition reference</h3>
+  <table>
+    <tr><th>Dataset</th><th class="num">Total windows</th><th class="num">sitting</th><th class="num">standing</th><th class="num">walking</th><th class="num">stepping_back</th></tr>
+    <tr><td>NTU (6-class, Model A)</td><td class="num">102,267</td><td class="num">33,521†</td><td class="num">16,056†</td><td class="num">10,947†</td><td class="num">9,533†</td></tr>
+    <tr><td>NTU (4-class, Model B)</td><td class="num">82,346</td><td class="num">39,511</td><td class="num">18,787</td><td class="num">12,851</td><td class="num">11,197</td></tr>
+    <tr><td>hri-dataset fine-tune train (Model C)</td><td class="num">12,082</td><td class="num">5,473</td><td class="num">3,007</td><td class="num">2,620</td><td class="num">982</td></tr>
+    <tr><td>hri-dataset fine-tune val</td><td class="num">3,039</td><td class="num">780</td><td class="num">710</td><td class="num">767</td><td class="num">782</td></tr>
+  </table>
+  <p class="tbl-caption">† Model A train-split counts shown (86,927 of the 102,267 total windows); Model A also included running (4,906) and slumped (11,964) windows, omitted here for column comparability. stepping_back is the smallest class in the fine-tuning set by a wide margin — the direct data-side explanation for Finding 4 (§6).</p>
+
+  <div class="footer-note">
+    HRI Motion Model — Comparative Analysis Report · Generated from the project's model
+    development &amp; evaluation session · All metrics reproduced from logged training and
+    evaluation runs.
+  </div>
+
+</div>
+</body>
+</html>

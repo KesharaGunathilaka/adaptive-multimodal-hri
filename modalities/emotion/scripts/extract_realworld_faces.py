@@ -31,7 +31,7 @@ import pandas as pd
 from config import DATA_DIR, EMOTION_LABELS, ROOT
 
 DATASET_DIR = os.path.abspath(os.path.join(
-    ROOT, "..", "..", "videos", "dataset", "hri-multimodal-intent-v1.0.0"))
+    ROOT, "..", "..", "videos", "struct"))
 OUT_ROOT = os.path.join(DATA_DIR, "realworld")
 
 # Dataset "Intended Emotion" -> RAF-DB folder number (1-based index in EMOTION_LABELS)

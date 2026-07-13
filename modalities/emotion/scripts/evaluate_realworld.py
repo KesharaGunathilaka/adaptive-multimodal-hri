@@ -1,5 +1,5 @@
 """
-Real-world evaluation on the HRI intent dataset (videos/dataset/...).
+Real-world evaluation on the HRI intent dataset (videos/struct).
 
 Runs the deployed inference pipeline (MediaPipe face detection -> tight crop ->
 224x224 + ImageNet normalize -> model) on every clip, averages the softmax
@@ -46,7 +46,7 @@ from src.models import ALL_MODELS, safe_name
 from src.transforms import get_test_transforms
 
 DATASET_DIR = os.path.abspath(os.path.join(
-    ROOT, "..", "..", "videos", "dataset", "hri-multimodal-intent-v1.0.0"))
+    ROOT, "..", "..", "videos", "struct"))
 
 # Dataset "Intended Emotion" annotation -> RAF-DB class name
 INTENDED_TO_LABEL = {
