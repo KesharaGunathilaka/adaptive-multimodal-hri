@@ -1,0 +1,11 @@
+# raw datasets, extracted landmarks, split indexes are regenerated per machine
+data/*
+!data/index/
+!data/index/*.csv
+
+# weights are published as GitHub Releases (gesture-vX.Y), not committed
+checkpoints/*.pth
+checkpoints/history_*.json
+
+# inference video outputs
+outputs/

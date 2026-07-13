@@ -1,64 +1,123 @@
-import sys
+"""
+Model zoo for gesture sequence classification (guide §7).
+
+Three architectures, all < 1M parameters, input [B, WINDOW, FEATURE_DIM]:
+  BiGRU           2-layer bidirectional GRU, mean+max pooling over time
+  TCN             4 residual dilated temporal-conv blocks, global pooling
+  TinyTransformer 2-layer encoder with CLS token and learned positions
+"""
 import os
+import sys
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-# Import model checkpoint path from configuration
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from config import DEFAULT_CHECKPOINT
+from config import DROPOUT, FEATURE_DIM, HIDDEN_SIZE, NUM_CLASSES, WINDOW
 
-class KeyPointClassifierNet(nn.Module):
-    """
-    3-Layer Multi-Layer Perceptron (MLP) architecture matching Keras model.
-    """
-    def __init__(self, num_classes=6):
-        super(KeyPointClassifierNet, self).__init__()
-        self.dropout1 = nn.Dropout(0.2)
-        self.fc1 = nn.Linear(42, 64)
-        self.relu1 = nn.ReLU()
-        self.dropout2 = nn.Dropout(0.3)
-        self.fc2 = nn.Linear(64, 32)
-        self.relu2 = nn.ReLU()
-        self.dropout3 = nn.Dropout(0.3)
-        self.fc3 = nn.Linear(32, 16)
-        self.relu3 = nn.ReLU()
-        self.fc4 = nn.Linear(16, num_classes)
+
+class BiGRUClassifier(nn.Module):
+    def __init__(self, num_classes=NUM_CLASSES, feature_dim=FEATURE_DIM,
+                 hidden_size=HIDDEN_SIZE, num_layers=2, dropout=DROPOUT):
+        super().__init__()
+        self.gru = nn.GRU(feature_dim, hidden_size, num_layers=num_layers,
+                          batch_first=True, bidirectional=True,
+                          dropout=dropout if num_layers > 1 else 0.0)
+        feat = 4 * hidden_size  # mean + max pooling over bidirectional outputs
+        self.head = nn.Sequential(
+            nn.LayerNorm(feat),
+            nn.Dropout(dropout),
+            nn.Linear(feat, hidden_size),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, num_classes),
+        )
+
+    def forward(self, x):                      # x: [B, T, F]
+        out, _ = self.gru(x)                   # [B, T, 2H]
+        pooled = torch.cat([out.mean(dim=1), out.max(dim=1).values], dim=1)
+        return self.head(pooled)
+
+
+class _TCNBlock(nn.Module):
+    def __init__(self, channels, kernel_size, dilation, dropout):
+        super().__init__()
+        pad = (kernel_size - 1) // 2 * dilation
+        self.net = nn.Sequential(
+            nn.Conv1d(channels, channels, kernel_size, padding=pad, dilation=dilation),
+            nn.BatchNorm1d(channels),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Conv1d(channels, channels, kernel_size, padding=pad, dilation=dilation),
+            nn.BatchNorm1d(channels),
+        )
+        self.act = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        x = self.dropout1(x)
-        x = self.relu1(self.fc1(x))
-        x = self.dropout2(x)
-        x = self.relu2(self.fc2(x))
-        x = self.dropout3(x)
-        x = self.relu3(self.fc3(x))
-        x = self.fc4(x)
-        return x
+        return self.act(x + self.net(x))
 
-class KeyPointClassifier(object):
-    def __init__(self, model_path=DEFAULT_CHECKPOINT, num_classes=6):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = KeyPointClassifierNet(num_classes=num_classes)
-        
-        # Load state dictionary
-        if os.path.exists(model_path):
-            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-        else:
-            print(f"Warning: PyTorch checkpoint not found at {model_path}.")
-            
-        self.model.to(self.device).eval()
 
-    def __call__(self, landmark_list):
-        # Convert landmarks to PyTorch tensor
-        input_tensor = torch.tensor([landmark_list], dtype=torch.float32).to(self.device)
-        
-        with torch.no_grad():
-            outputs = self.model(input_tensor)
-            # Apply softmax to get probabilities
-            probabilities = F.softmax(outputs, dim=1).squeeze(0)
+class TCNClassifier(nn.Module):
+    def __init__(self, num_classes=NUM_CLASSES, feature_dim=FEATURE_DIM,
+                 hidden_size=HIDDEN_SIZE, kernel_size=5, dropout=DROPOUT):
+        super().__init__()
+        self.proj = nn.Conv1d(feature_dim, hidden_size, 1)
+        self.blocks = nn.Sequential(
+            *[_TCNBlock(hidden_size, kernel_size, d, dropout) for d in (1, 2, 4, 8)])
+        self.head = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, num_classes),
+        )
 
-        # Get class ID and probability score
-        result_index = torch.argmax(probabilities).item()
-        result_confidence = probabilities[result_index].item()
+    def forward(self, x):                      # x: [B, T, F]
+        z = self.blocks(self.proj(x.transpose(1, 2)))  # [B, H, T]
+        return self.head(z.mean(dim=2))
 
-        return result_index, result_confidence
+
+class TinyTransformer(nn.Module):
+    def __init__(self, num_classes=NUM_CLASSES, feature_dim=FEATURE_DIM,
+                 hidden_size=HIDDEN_SIZE, num_layers=2, num_heads=4,
+                 dropout=DROPOUT, window=WINDOW):
+        super().__init__()
+        self.proj = nn.Linear(feature_dim, hidden_size)
+        self.cls = nn.Parameter(torch.zeros(1, 1, hidden_size))
+        self.pos = nn.Parameter(torch.zeros(1, window + 1, hidden_size))
+        nn.init.trunc_normal_(self.pos, std=0.02)
+        layer = nn.TransformerEncoderLayer(
+            d_model=hidden_size, nhead=num_heads, dim_feedforward=2 * hidden_size,
+            dropout=dropout, batch_first=True, norm_first=True)
+        self.encoder = nn.TransformerEncoder(layer, num_layers=num_layers)
+        self.head = nn.Sequential(
+            nn.LayerNorm(hidden_size),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, num_classes),
+        )
+
+    def forward(self, x):                      # x: [B, T, F]
+        z = self.proj(x)
+        z = torch.cat([self.cls.expand(z.size(0), -1, -1), z], dim=1)
+        z = self.encoder(z + self.pos[:, : z.size(1)])
+        return self.head(z[:, 0])
+
+
+ALL_MODELS = {
+    "BiGRU": BiGRUClassifier,
+    "TCN": TCNClassifier,
+    "TinyTransformer": TinyTransformer,
+}
+
+
+def build_model(name, **kwargs):
+    return ALL_MODELS[name](**kwargs)
+
+
+def safe_name(name):
+    return name.replace("-", "_").replace(" ", "_")
+
+
+def count_params(model):
+    return sum(p.numel() for p in model.parameters())
+
+
+def model_size_mb(model):
+    return count_params(model) * 4 / (1024 ** 2)

@@ -1,100 +1,109 @@
-# 🤖 High-Accuracy Gesture Modality
+# Gesture Recognition (v2)
 
-This folder contains the real-time hand gesture recognition pipeline for the Adaptive Multimodal HRI framework, implemented natively in **PyTorch** for consistency with the rest of the project's modalities.
+Real-time hand/body gesture recognition for the adaptive HRI system.
+MediaPipe Holistic landmarks (pose + both hands) are turned into 185-dim
+per-frame features, a 32-frame window feeds a small temporal network
+(BiGRU / TCN / TinyTransformer), and the engine emits one of **8 classes**:
 
----
+`idle · wave · point · thumbs_up · thumbs_down · beckoning · raise_hand · both_hands_up`
 
-## 🛠️ How It Works & Techniques
-*   **MediaPipe Hands**: Extracts 21 skeletal joints (x, y, z landmarks) per hand in real-time.
-*   **PyTorch Classifier (MLP)**: Performs classification using a PyTorch multi-layer perceptron (MLP) loaded from a `.pth` file to identify 6 poses: Open Palm, Close (Fist), Pointer, Thumbs Up, Thumbs Down, and Beckoning.
-*   **EMA Smoothing**: An Exponential Moving Average filter ($\alpha = 0.45$) stabilizes coordinate streams and eliminates landmark jitter ("dancing points").
-*   **Dynamic Trajectory Resolving**: Tracks motion histories over a 25-frame rolling window to detect actions like waving, beckoning (scale-invariantly), and hand raising (flex-pose tracking, supporting fists/unknown shapes).
+Unlike the removed v1 (static hand-pose MLP + hand-written motion rules),
+static and dynamic gestures are learned **uniformly** from keypoint sequences
+— no rules, real metrics for every class. Targeted at **Jetson Orin Nano**.
 
----
+**Design spec & HPC runbook (source of truth):
+[`docs/GESTURE_V2_DESIGN_AND_HPC_GUIDE.md`](../../docs/GESTURE_V2_DESIGN_AND_HPC_GUIDE.md)**
 
-## 📂 Directory Layout
+## Data
+
+Trained on public datasets + a small custom set (guide §4):
+
+| Source | Classes contributed |
+|---|---|
+| 20BN-Jester | thumbs_up/down, wave, beckoning (proxy), idle negatives |
+| NTU RGB+D 120 | wave, point, thumbs_up/down, both_hands_up, idle negatives |
+| Custom recordings | beckoning, raise_hand (+ live test set for ALL classes) |
+
+Raw datasets live outside the repo — set `GESTURE_DATA_ROOT` (defaults to
+`data/raw/`), laid out per guide §4.
+
+## Folder structure
+
 ```
 gesture/
-├── config.py                 # Central configurations, paths, labels, and colors
-├── checkpoints/              # Folder housing model weights and label mappings
-│   ├── keypoint_classifier.pth
-│   └── keypoint_classifier_label.csv
-├── src/                      # Modality source components
-│   ├── __init__.py           # Package interfaces
-│   ├── models.py             # PyTorch model class and wrapper
-│   ├── tracker.py            # Temporal coordinate history tracking
-│   ├── engine.py             # GestureEngine state-machine resolver
-│   └── transforms.py         # Landmark scaling and coordinate preprocessing
-├── scripts/                  # Training and conversion utilities
-│   ├── convert_keras_to_pytorch.py # Converts original Keras .hdf5 to PyTorch .pth
-│   └── train_pytorch.py      # Trains the MLP directly in PyTorch from keypoint.csv
-└── inference/                # Execution scripts
-    └── realtime_realsense.py # Real-time camera stream detector (RealSense/Webcam)
+├── config.py               # classes, paths, feature/window spec, engine params
+├── src/                    # importable library
+│   ├── features.py         # landmark -> 185-dim features, normalization, augmentation
+│   ├── data.py             # dataset mapping tables, sequence dataset, splits I/O
+│   ├── models.py           # BiGRU / TCN / TinyTransformer (< 1M params each)
+│   ├── training.py         # shared fit/eval recipe (early stop on macro-F1)
+│   └── engine.py           # GestureEngine: rolling window + EMA + debounce
+├── scripts/                # runnable pipeline stages
+│   ├── extract_landmarks.py  # Stage 0  MediaPipe over datasets -> .npz (CPU, shardable)
+│   ├── prepare_data.py       # Stage 0.5 split index CSVs + data report
+│   ├── compare_models.py     # Stage 1  compare architectures -> pick winner
+│   ├── train.py              # Stage 2  full training (+ model_config.json)
+│   ├── tune.py               # Stage 3  optuna hyper-parameter tuning
+│   └── evaluate.py           # Stage 4  test + live-test + latency report
+├── inference/
+│   ├── realtime_realsense.py # live RealSense / webcam dashboard
+│   └── video.py              # video files -> annotated mp4
+├── data/index/             # split CSVs (committed); data/raw & landmarks git-ignored
+├── checkpoints/            # weights (git-ignored; published as GitHub Releases)
+└── reports/                # generated stage reports
 ```
 
----
+## Pipeline (run from this folder)
 
-## 📂 File-by-File Description
+```bash
+python scripts/extract_landmarks.py --dataset all      # shardable: --shard i/N
+python scripts/prepare_data.py
+python scripts/compare_models.py
+python scripts/train.py --model <winner>
+python scripts/tune.py --model <winner> --trials 40
+python scripts/train.py --model <winner> --use-tuned
+python scripts/evaluate.py
+```
 
-*   **`config.py`**: central configurations file. Stores directory paths, the 6 gesture category labels, and BGR color maps for the UI.
-*   **`checkpoints/keypoint_classifier.pth`**: trained PyTorch neural weights state dict.
-*   **`checkpoints/keypoint_classifier_label.csv`**: mapping reference sheet between class indices and gesture strings.
-*   **`src/__init__.py`**: package initialization file exposing classes/wrappers for clean external importing.
-*   **`src/models.py`**: houses the PyTorch `KeyPointClassifierNet` model class definition and the `KeyPointClassifier` loading wrapper.
-*   **`src/transforms.py`**: holds coordinate preprocessing helper functions (`calc_landmark_list`, `pre_process_landmark`, `hand_y_norm`) to normalize landmark values relative to the wrist coordinate and current hand scale.
-*   **`src/tracker.py`**: manages coordinate history buffers (`deque` of size 25) for each tracked hand to calculate spatial travel metrics (horizontal waving and vertical raising).
-*   **`src/engine.py`**: defines the `GestureEngine` class, which handles EMA landmark smoothing, invokes PyTorch inference, and resolves dynamic HRI scenarios using the history tracker.
-*   **`scripts/convert_keras_to_pytorch.py`**: script mapping trained Keras weights over to PyTorch layer weights.
-*   **`scripts/train_pytorch.py`**: script to train a fresh classifier in PyTorch from the raw `keypoint.csv` dataset.
-*   **`inference/realtime_realsense.py`**: real-time camera inference script supporting both Intel RealSense depth streams and standard webcam fallback indices.
+Heavy stages run on the HPC — SLURM templates and setup in the guide (§9).
 
----
+## Real-time inference
 
-## 🚀 Main Script Integration (How to Call)
+```bash
+python inference/realtime_realsense.py                 # RealSense, webcam fallback
+python inference/video.py --input ../../videos --save
+```
 
-To call this modality in your main HRI multimodal loop, import `GestureEngine` and call it frame-by-frame:
+## Main script integration (how to call)
 
 ```python
 import cv2 as cv
 import mediapipe as mp
 from modalities.gesture.src.engine import GestureEngine
 
-# 1. Initialize detector components
-mp_hands = mp.solutions.hands.Hands(max_num_hands=2)
+holistic = mp.solutions.holistic.Holistic(model_complexity=1)
 gesture_detector = GestureEngine()
 
-# 2. In your video/camera processing loop:
 cap = cv.VideoCapture(0)
 while cap.isOpened():
     ret, frame = cap.read()
-    if not ret: break
+    if not ret:
+        break
+    res = holistic.process(cv.cvtColor(frame, cv.COLOR_BGR2RGB))
 
-    # Extract raw hand landmarks using MediaPipe
-    rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-    results = mp_hands.process(rgb_frame)
-
-    # 3. Call the GestureEngine to resolve high-level HRI intents
-    # Returns: (intent_label_str, color_tuple)
-    gesture_intent, color = gesture_detector.process(
-        results.multi_hand_landmarks, 
-        frame.shape
-    )
-    
-    print(f"Active Gesture: {gesture_intent}")
+    # (stable_label_str, confidence_float) — same call style as MotionEngine
+    gesture, confidence = gesture_detector.process_holistic(res)
+    print(f"Gesture: {gesture} ({confidence:.2f})")
 ```
 
----
+`GestureEngine` buffers ~2 s of frames, resamples to the model window,
+smooths the softmax with EMA (α = 0.25) and only emits a non-idle label once
+it has won for 300 ms at ≥ 0.60 confidence — so the fusion layer sees stable
+intents, not per-frame flicker. Call `engine.reset()` when the tracked person
+changes.
 
-## 🚀 Setup & Execution
+## Setup
 
-### 1. Setup Environment
-Ensure your active environment has the required packages installed:
-```bash
-pip install torch opencv-python mediapipe numpy
-```
-
-### 2. Run Real-time Inference
-To start real-time detection:
-```bash
-python inference/realtime_realsense.py
-```
+Use the repo `.venv` (PyTorch + mediapipe): `pip install -r requirements.txt`
+from the repo root. Trained weights ship as GitHub Releases (`gesture-v2.x`)
+— drop `best_*.pth` + `model_config.json` into `checkpoints/`.
