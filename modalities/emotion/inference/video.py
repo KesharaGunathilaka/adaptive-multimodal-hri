@@ -11,8 +11,8 @@ Put the weights file next to this script (or pass --checkpoint), then:
     python video.py --video myclip.mp4 --checkpoint best_MobileNetV2.pth
 
 Method (the plain pipeline that matches how the model was trained on RAF-DB):
-    frame -> MediaPipe close-range face detection -> tight crop ->
-    224x224 + ImageNet normalize -> model -> emotion label + confidence.
+    frame -> MediaPipe face detection (full-range first, close-range fallback)
+    -> tight crop -> 224x224 + ImageNet normalize -> model -> label + confidence.
 """
 import argparse
 import os
@@ -28,18 +28,64 @@ from torchvision import transforms
 
 # ── Configuration (edit these to ship a different model) ──────────────────
 EMOTION_LABELS = ["Surprise", "Fear", "Disgust", "Happy", "Sad", "Anger", "Neutral"]
-DEFAULT_WEIGHTS = "best_MobileNetV2.pth"   # filename of the trained weights
 IMAGE_SIZE = 224
 MAX_FRAME_WIDTH = 640                       # downscale wide frames before detection
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv"}
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def build_model(num_classes=len(EMOTION_LABELS)):
-    """MobileNetV2 with a `num_classes` head. Weights come from the checkpoint."""
+def build_mobilenet_v2(num_classes=len(EMOTION_LABELS)):
     model = tvm.mobilenet_v2(weights=None)
     model.classifier[1] = nn.Linear(model.last_channel, num_classes)
     return model
+
+
+def build_efficientnet_b0(num_classes=len(EMOTION_LABELS)):
+    model = tvm.efficientnet_b0(weights=None)
+    model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
+    return model
+
+
+# Registry: model name -> (builder, default weights filenames in preference
+# order: real-world fine-tuned first, RAF-DB-only as fallback)
+MODELS = {
+    "MobileNetV2": (build_mobilenet_v2,
+                    ["finetuned_MobileNetV2.pth", "best_MobileNetV2.pth"]),
+    "EfficientNet-B0": (build_efficientnet_b0,
+                        ["finetuned_EfficientNet_B0.pth", "best_EfficientNet_B0.pth"]),
+}
+
+
+def resolve_default_weights(names):
+    for name in names:
+        try:
+            return resolve_weights(name)
+        except SystemExit:
+            continue
+    raise SystemExit(f"No weights file found. Looked for: {names} "
+                     f"(next to this script, in ./checkpoints, ../checkpoints)")
+
+
+def make_face_detectors():
+    """Full-range detector first (subjects up to ~5m), close-range fallback.
+
+    The close-range-only detector misses ~80% of faces on far-field footage
+    (e.g. a subject seated 2-3m from a 640x480 camera).
+    """
+    fd = mp.solutions.face_detection
+    return [
+        fd.FaceDetection(model_selection=1, min_detection_confidence=0.4),
+        fd.FaceDetection(model_selection=0, min_detection_confidence=0.5),
+    ]
+
+
+def detect_best_face(detectors, rgb):
+    """Highest-score detection across detectors (full-range first)."""
+    for det in detectors:
+        results = det.process(rgb)
+        if results.detections:
+            return max(results.detections, key=lambda d: d.score[0])
+    return None
 
 
 def get_transform():
@@ -100,7 +146,7 @@ def _draw_overlay(frame, paused):
         cv2.putText(frame, text, (cx, cy), font, scale, (0, 220, 255), thick, cv2.LINE_AA)
 
 
-def process_video(video_path, out_path, model, transform, face_detection, device, show):
+def process_video(video_path, out_path, model, transform, detectors, device, show):
     """Process one video. Returns: "done" | "next" | "prev" | "quit"."""
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -121,15 +167,13 @@ def process_video(video_path, out_path, model, transform, face_detection, device
             h, w, _ = frame.shape
             small = (cv2.resize(frame, (MAX_FRAME_WIDTH, int(h * MAX_FRAME_WIDTH / w)))
                      if w > MAX_FRAME_WIDTH else frame)
-            results = face_detection.process(cv2.cvtColor(small, cv2.COLOR_BGR2RGB))
-            if results.detections:
-                for det in results.detections:
-                    box = det.location_data.relative_bounding_box
-                    x, y = max(0, int(box.xmin * w)), max(0, int(box.ymin * h))
-                    bw, bh = int(box.width * w), int(box.height * h)
-                    face = frame[y:y + bh, x:x + bw]
-                    if face.size == 0:
-                        continue
+            det = detect_best_face(detectors, cv2.cvtColor(small, cv2.COLOR_BGR2RGB))
+            if det is not None:
+                box = det.location_data.relative_bounding_box
+                x, y = max(0, int(box.xmin * w)), max(0, int(box.ymin * h))
+                bw, bh = int(box.width * w), int(box.height * h)
+                face = frame[y:y + bh, x:x + bw]
+                if face.size > 0:
                     pil = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
                     tensor = transform(pil).unsqueeze(0).to(device)
                     with torch.no_grad():
@@ -166,7 +210,10 @@ def main():
     src.add_argument("--video", default=None, help="Path to a single input video file.")
     src.add_argument("--videos-dir", default=None,
                      help="Folder to scan recursively (default: current directory).")
-    ap.add_argument("--checkpoint", default=DEFAULT_WEIGHTS, help="Path to the .pth weights.")
+    ap.add_argument("--model", default="MobileNetV2", choices=list(MODELS),
+                    help="Backbone architecture matching the weights.")
+    ap.add_argument("--checkpoint", default=None,
+                    help="Path to the .pth weights (default: best_<model>.pth).")
     ap.add_argument("--output", default=None, help="Output path (single-file mode only).")
     ap.add_argument("--out-dir", default="outputs", help="Output root for batch mode.")
     ap.add_argument("--no-show", action="store_true", help="Do not open a preview window.")
@@ -175,19 +222,21 @@ def main():
     args = ap.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt = resolve_weights(args.checkpoint)
-    model = build_model()
+    build, default_weights = MODELS[args.model]
+    ckpt = (resolve_weights(args.checkpoint) if args.checkpoint
+            else resolve_default_weights(default_weights))
+    model = build()
     model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
     model.to(device).eval()
     transform = get_transform()
     print("=" * 60)
+    print(f" model:   {args.model}")
     print(f" weights: {ckpt}")
     print(f" device:  {device}")
     print(f" labels:  {EMOTION_LABELS}")
     print("=" * 60)
 
-    face_detection = mp.solutions.face_detection.FaceDetection(
-        model_selection=1, min_detection_confidence=0.5)
+    detectors = make_face_detectors()
     out_root = os.path.abspath(args.out_dir)
 
     # ── Single-file mode ─────────────────────────────────────────────────
@@ -196,7 +245,7 @@ def main():
         out_path = args.output or os.path.join(
             out_root, os.path.splitext(os.path.basename(args.video))[0] + "_emotion.mp4")
         print(f"Writing to {out_path}")
-        process_video(args.video, out_path, model, transform, face_detection, device,
+        process_video(args.video, out_path, model, transform, detectors, device,
                       show=not args.no_show)
         cv2.destroyAllWindows()
         print(f"Saved: {out_path}")
@@ -220,7 +269,7 @@ def main():
             skipped += 1; idx += 1
             continue
         print(f"[{idx+1}/{len(videos)}] {label}")
-        action = process_video(video_path, out_path, model, transform, face_detection, device,
+        action = process_video(video_path, out_path, model, transform, detectors, device,
                                show=not args.no_show)
         cv2.destroyAllWindows()
         if action == "quit":

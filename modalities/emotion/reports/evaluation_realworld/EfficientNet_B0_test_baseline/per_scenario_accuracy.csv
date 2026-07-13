@@ -1,0 +1,14 @@
+scenario_id,true,clips,accuracy
+S21_F04,Sad,6,0.0
+S24_F07,Anger,8,0.0
+S25_F09,Happy,8,0.0
+S26_F02,Surprise,14,0.0
+S28_F10,Sad,8,0.0
+S06_F08,Disgust,13,0.07692307692307693
+S19_F02,Fear,10,0.6
+S08_F06,Neutral,14,0.7142857142857143
+S05_F02,Anger,12,0.75
+S18_F01,Happy,4,0.75
+S20_F03,Neutral,18,0.8888888888888888
+S09_F02,Surprise,12,1.0
+S29_F03,Neutral,14,1.0
