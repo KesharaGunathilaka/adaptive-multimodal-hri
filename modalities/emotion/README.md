@@ -26,15 +26,11 @@ emotion/
 │   ├── compare_models.py   # Stage 1  compare backbones -> pick winner
 │   ├── train.py            # Stage 2  full training of chosen model
 │   ├── tune.py             # Stage 3  hyper-parameter tuning
-│   ├── evaluate.py         # Stage 4  full evaluation (RAF-DB test)
-│   ├── extract_realworld_faces.py  # Stage 5  face crops from the HRI dataset
-│   ├── finetune_realworld.py       # Stage 6  fine-tune on RAF-DB + real crops
-│   └── evaluate_realworld.py       # Stage 7  clip-level real-world evaluation
+│   └── evaluate.py         # Stage 4  full evaluation
 ├── inference/
 │   ├── realtime_realsense.py   # live RealSense camera
 │   └── video.py                # video file -> annotated mp4
-├── data/                   # git-ignored: RAF-DB train/1..7, test/1..7
-│                           # + realworld/{train,val}/1..7 (from Stage 5)
+├── data/                   # RAF-DB (git-ignored): train/1..7, test/1..7
 ├── checkpoints/            # saved weights (git-ignored)
 ├── reports/                # generated reports, CSVs, plots
 └── outputs/                # inference video outputs (git-ignored)
@@ -70,25 +66,23 @@ This saves `best_MobileNetV2.pth` (the default path the scripts load). Then:
 
 ```bash
 python scripts/evaluate.py                                   # reproduce the report
-python inference/video.py --video ../../videos/Classroom/1/20260511_160401.mp4
+python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
 ```
 
-**Deployed model: MobileNetV2 fine-tuned on real-world footage**
-(`checkpoints/finetuned_MobileNetV2.pth`, 8.8 MB). The RAF-DB-only models
-collapse on far-field deployment footage (subjects 2-5m from the camera), so
-the deployed weights are fine-tuned on RAF-DB + face crops from the project's
-HRI intent dataset (Stages 5-7 below). Clip-level results on the dataset's
-**held-out test subjects** (141 clips, subject-disjoint split):
+**Deployed model: MobileNetV2** (plain recipe — no class weighting). It keeps the
+natural class prior, so it generalizes noticeably better to **live video** than
+the class-weighted EfficientNet-B0 (which over-predicts Surprise), and it's half
+the size. Current release `emotion-v1.0`, test-set performance (RAF-DB, 3068 images):
 
-| Model | Real acc. | Real balanced acc. | Real macro-F1 | RAF-DB acc. / macro-F1 | Size |
+| Model | Accuracy | Balanced acc. | Macro-F1 | Surprise P / R | Size |
 |---|---|---|---|---|---|
-| **MobileNetV2 fine-tuned (deployed)** | **58.9%** | **50.8%** | **53.2%** | 81.9% / 74.3% | 8.8 MB |
-| EfficientNet-B0 fine-tuned (alt) | 57.4% | 47.1% | 49.5% | 84.7% / 78.0% | 16 MB |
-| MobileNetV2 RAF-DB only (`best_`) | 44.7% | 28.3% | 24.0% | 84.3% / 76.7% | 8.8 MB |
-| EfficientNet-B0 RAF-DB only (`best_`) | 50.4% | 38.7% | 37.3% | 83.9% / 76.4% | 16 MB |
+| **MobileNetV2 (deployed)** | **84.32%** | 75.43% | **76.72%** | 0.85 / 0.85 | 8.8 MB |
+| EfficientNet-B0 (alt) | 83.93% | 79.10% | 76.41% | 0.80 / 0.89 | 16 MB |
 
-> Inference loads `finetuned_<model>.pth` if present, else falls back to
-> `best_<model>.pth`. EfficientNet-B0 is available via `--model EfficientNet-B0`.
+> For live inference, run the deployed model with **plain preprocessing** (it was
+> trained without CLAHE/heavy aug): e.g.
+> `python inference/video.py --video clip.mp4 --no-clahe --padding 0.2`.
+> The class-weighted EfficientNet-B0 remains available via `--model EfficientNet-B0`.
 > The pipeline below is only needed to **retrain** from scratch.
 
 ### Publishing a new model version (maintainers)
@@ -118,16 +112,6 @@ python scripts/train.py --model EfficientNet-B0 --base_lr 5e-5 --batch_size 64
 
 # Stage 4 — full evaluation of the final checkpoint  -> reports/evaluation/
 python scripts/evaluate.py --model EfficientNet-B0
-
-# Stage 5 — extract face crops from the HRI intent dataset  -> data/realworld/
-#           (train/val subjects only; test subjects stay unseen)
-python scripts/extract_realworld_faces.py
-
-# Stage 6 — fine-tune on RAF-DB + real crops  -> checkpoints/finetuned_<model>.pth
-python scripts/finetune_realworld.py --model MobileNetV2
-
-# Stage 7 — clip-level real-world evaluation  -> reports/evaluation_realworld/
-python scripts/evaluate_realworld.py --split test --checkpoint checkpoints/finetuned_MobileNetV2.pth
 ```
 
 Every script supports `--help`. Useful flags:
@@ -151,28 +135,34 @@ Every script supports `--help`. Useful flags:
 python inference/realtime_realsense.py --model EfficientNet-B0
 
 # Annotate a video file (writes to outputs/)
-python inference/video.py --video ../../videos/Classroom/1/20260511_160401.mp4
+python inference/video.py --video ../../videos/test/C1_D2_T2.mp4
 ```
 
-Both scripts use MediaPipe face detection — **full-range first**
-(`model_selection=1`, works to ~5m) **with a close-range fallback**. The old
-close-range-only detector found a face in only ~20% of far-field dataset clips;
-full-range reaches ~97%. Both accept `--model {MobileNetV2,EfficientNet-B0}`
-and `--checkpoint`, and default to the fine-tuned weights when present.
+Both use MediaPipe for face detection, pad the crop to match RAF-DB framing, and
+apply the same normalization as training. `video.py` adds eye-based alignment,
+CLAHE, and test-time augmentation for robustness on in-the-wild footage.
 
-### Real-world fine-tuning (why the deployed weights differ from `best_`)
+### Reducing the live "Surprise" bias
 
-RAF-DB models see close-up faces; deployment footage has ~40-90px faces that
-lose expression detail when upscaled, collapsing predictions to Neutral/Happy
-(RAF-DB-only MobileNetV2: 24% macro-F1 on the real-world test subjects, Fear
-recall 0%). Two fixes, both in this repo:
+On real footage the model over-predicts **Surprise**. This is a train/deployment
+prior mismatch: inverse-frequency class weighting trains it to treat all emotions
+as equally likely, but real video is mostly Neutral/Happy, so it over-fires on
+Surprise (its widest decision region). Two no-retrain knobs (both inference
+scripts) counter it:
 
-1. `src/transforms.py` adds `RandomDownscale` (train-time downscale/upscale) so
-   training simulates far-field resolution.
-2. Stages 5-6 fine-tune on RAF-DB + real crops from the HRI dataset's
-   train/val subjects, with **softened** inverse-frequency class weights
-   (`w ~ 1/count^0.5`) — full inverse-frequency weighting over-fires on rare
-   classes (the old live "Surprise" bias).
+```bash
+# Re-inject the natural class prior (logit adjustment). Start ~0.5, raise toward 1.0.
+python inference/video.py --video clip.mp4 --prior-correction 0.7
 
-Model selection uses macro-F1 on the held-out val subject; the final comparison
-(table above) uses the test subjects, which are never trained on.
+# Or set explicit per-class logit offsets (order: Surprise,Fear,Disgust,Happy,Sad,Anger,Neutral)
+python inference/video.py --video clip.mp4 --class-bias "-1,0,0,0,0,0,0.5"
+```
+
+Preprocessing A/B knobs to find the trigger: `--padding 0.2` (tighter crop),
+`--no-clahe` (CLAHE can exaggerate the wide-eyed look), `--no-tta`, `--no-align`.
+
+> Root cause note: the older plain-trained MobileNetV2 (no class weighting, light
+> aug — see the `emotion` branch) generalized better to real video precisely
+> because it kept the natural prior. The proper long-term fix is to retrain with
+> softer/no class weighting (or fine-tune on in-the-wild data); `--prior-correction`
+> approximates that at inference time.

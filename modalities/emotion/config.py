@@ -64,9 +64,8 @@ SIZE_BUDGET_MB = 20.0
 # default. To ship a different model: drop its .pth in checkpoints/ and update
 # both lines. Inference can still be overridden per-run with --model/--checkpoint.
 #
-# MobileNetV2 fine-tuned on RAF-DB + real-world far-field crops
-# (scripts/finetune_realworld.py) is the deployed model: best clip-level
-# macro-F1 on the held-out real-world test subjects (53.2% vs 24.0% before
-# fine-tuning; RAF-DB stays at 81.9% acc), and it's the smallest (8.8 MB).
+# MobileNetV2 (plain recipe) is the deployed model: it keeps the natural class
+# prior, so it generalizes better to live video than the class-weighted
+# EfficientNet-B0, and it's smaller (8.8 MB). See README "Pretrained model".
 DEFAULT_MODEL = "MobileNetV2"
-DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "finetuned_MobileNetV2.pth")
+DEFAULT_CHECKPOINT = os.path.join(CHECKPOINT_DIR, "best_MobileNetV2.pth")

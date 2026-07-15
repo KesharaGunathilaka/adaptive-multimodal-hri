@@ -18,26 +18,6 @@ from config import IMAGE_SIZE, NORM_MEAN, NORM_STD
 _clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 
-class RandomDownscale:
-    """Downscale to a small size and back up, simulating far-field faces.
-
-    Real deployment footage (subject 2-5m from a 640x480 camera) yields
-    ~40-90px face crops, while RAF-DB images are close-up; this closes that
-    resolution gap during training.
-    """
-
-    def __init__(self, p=0.5, min_size=32, max_size=96):
-        self.p = p
-        self.min_size = min_size
-        self.max_size = max_size
-
-    def __call__(self, img):
-        if random.random() > self.p:
-            return img
-        size = random.randint(self.min_size, self.max_size)
-        return img.resize((size, size), Image.BILINEAR).resize(img.size, Image.BILINEAR)
-
-
 class RandomCLAHE:
     """Randomly applies CLAHE on the L channel to match the inference pipeline."""
 
@@ -64,7 +44,6 @@ def get_train_transforms():
         transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), shear=5),
         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
         transforms.RandomGrayscale(p=0.05),
-        RandomDownscale(p=0.5),
         RandomCLAHE(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize(NORM_MEAN, NORM_STD),

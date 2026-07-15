@@ -1,36 +1,36 @@
 # Emotion Model - Stage 4: Evaluation Report (MobileNetV2)
 
-- Checkpoint: `checkpoints/finetuned_MobileNetV2.pth`
+- Checkpoint: `checkpoints\best_MobileNetV2.pth`
 - Test images: 3068
 
 ## Overall metrics
 
 | Metric | Value |
 |---|---|
-| Accuracy | 81.91% |
-| Balanced accuracy | 76.00% |
-| Macro-F1 | 74.32% |
-| Weighted-F1 | 82.28% |
-| Macro precision | 73.21% |
-| Macro recall | 76.00% |
+| Accuracy | 84.32% |
+| Balanced accuracy | 75.43% |
+| Macro-F1 | 76.72% |
+| Weighted-F1 | 84.06% |
+| Macro precision | 78.68% |
+| Macro recall | 75.43% |
 
 ## Per-class metrics
 
 | Emotion   |   Precision |   Recall |   F1-Score |   Support |
 |:----------|------------:|---------:|-----------:|----------:|
-| Surprise  |       80.97 |    86.63 |      83.7  |       329 |
-| Fear      |       62.86 |    59.46 |      61.11 |        74 |
-| Disgust   |       45.41 |    58.75 |      51.23 |       160 |
-| Happy     |       95.83 |    89.28 |      92.44 |      1185 |
-| Sad       |       73.22 |    84.1  |      78.29 |       478 |
-| Anger     |       71.43 |    80.25 |      75.58 |       162 |
-| Neutral   |       82.78 |    73.53 |      77.88 |       680 |
+| Surprise  |       84.55 |    84.8  |      84.67 |       329 |
+| Fear      |       65.75 |    64.86 |      65.31 |        74 |
+| Disgust   |       68.47 |    47.5  |      56.09 |       160 |
+| Happy     |       92.17 |    94.35 |      93.24 |      1185 |
+| Sad       |       77.43 |    83.26 |      80.24 |       478 |
+| Anger     |       81.82 |    72.22 |      76.72 |       162 |
+| Neutral   |       80.56 |    81.03 |      80.79 |       680 |
 
 
 ## Confidence
 
-- Mean confidence on correct predictions: 0.770
-- Mean confidence on incorrect predictions: 0.536
+- Mean confidence on correct predictions: 0.962
+- Mean confidence on incorrect predictions: 0.816
 - A well-calibrated model is more confident when correct.
 
 ## Figures
