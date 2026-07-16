@@ -32,3 +32,5 @@ data/
 # Inference output dirs (annotated clips / logs)
 runs/
 outputs/
+
+hf_cache/
