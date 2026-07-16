@@ -1,6 +1,6 @@
 # Gesture Model - Stage 2: Training Report (TCN)
 
-Generated: 2026-07-12 03:52. Recipe: class-weighted CrossEntropy + label smoothing, AdamW, cosine LR with warmup, early stopping on val macro-F1.
+Generated: 2026-07-15 13:11. Recipe: class-weighted CrossEntropy + label smoothing, AdamW, cosine LR with warmup, early stopping on val macro-F1.
 
 ## Configuration
 
@@ -14,11 +14,11 @@ Generated: 2026-07-12 03:52. Recipe: class-weighted CrossEntropy + label smoothi
 
 | Metric | Value |
 |---|---|
-| Accuracy | 92.78% |
-| Balanced accuracy | 92.93% |
-| Macro-F1 | 92.38% |
-| Weighted-F1 | 92.78% |
-| Best epoch | 53 |
+| Accuracy | 93.24% |
+| Balanced accuracy | 92.79% |
+| Macro-F1 | 92.77% |
+| Weighted-F1 | 93.24% |
+| Best epoch | 82 |
 
 - Checkpoint: `checkpoints/best_TCN.pth`
 - Training curves: `training_curves.png`

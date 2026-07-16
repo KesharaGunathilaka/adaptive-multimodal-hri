@@ -38,7 +38,9 @@ NTU_MAP = {
     69: "thumbs_up",       # thumb up
     70: "thumbs_down",     # thumb down
     95: "both_hands_up",   # hands up (both hands)
-    22: "both_hands_up",   # cheer up — visually verify a sample, drop if unfit
+    # 22 cheer up: DROPPED after visual check (2026-07-13) — inconsistent
+    # (fist-pumping at shoulder height in some clips, arms overhead in
+    # others); neither a clean both_hands_up nor a safe idle negative.
 }
 # Daily-action confusers -> idle. A38 salute is deliberately NOT raise_hand.
 NTU_NEGATIVES = {1: "drink water", 8: "sit down", 10: "clapping",

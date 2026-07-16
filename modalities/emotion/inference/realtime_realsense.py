@@ -11,8 +11,8 @@ Put the weights file next to this script (or pass --checkpoint), then:
     python realtime_realsense.py
     python realtime_realsense.py --checkpoint best_MobileNetV2.pth
 
-Method: camera frame -> MediaPipe close-range face detection -> tight crop ->
-224x224 + ImageNet normalize -> model -> emotion label + confidence.
+Method: camera frame -> MediaPipe face detection (full-range first, close-range
+fallback) -> tight crop -> 224x224 + ImageNet normalize -> model -> label + confidence.
 """
 import argparse
 import os
@@ -35,16 +35,62 @@ except ImportError:
 
 # ── Configuration (edit these to ship a different model) ──────────────────
 EMOTION_LABELS = ["Surprise", "Fear", "Disgust", "Happy", "Sad", "Anger", "Neutral"]
-DEFAULT_WEIGHTS = "best_MobileNetV2.pth"
 IMAGE_SIZE = 224
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def build_model(num_classes=len(EMOTION_LABELS)):
-    """MobileNetV2 with a `num_classes` head. Weights come from the checkpoint."""
+def build_mobilenet_v2(num_classes=len(EMOTION_LABELS)):
     model = tvm.mobilenet_v2(weights=None)
     model.classifier[1] = nn.Linear(model.last_channel, num_classes)
     return model
+
+
+def build_efficientnet_b0(num_classes=len(EMOTION_LABELS)):
+    model = tvm.efficientnet_b0(weights=None)
+    model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
+    return model
+
+
+# Registry: model name -> (builder, default weights filenames in preference
+# order: real-world fine-tuned first, RAF-DB-only as fallback)
+MODELS = {
+    "MobileNetV2": (build_mobilenet_v2,
+                    ["finetuned_MobileNetV2.pth", "best_MobileNetV2.pth"]),
+    "EfficientNet-B0": (build_efficientnet_b0,
+                        ["finetuned_EfficientNet_B0.pth", "best_EfficientNet_B0.pth"]),
+}
+
+
+def resolve_default_weights(names):
+    for name in names:
+        try:
+            return resolve_weights(name)
+        except SystemExit:
+            continue
+    raise SystemExit(f"No weights file found. Looked for: {names} "
+                     f"(next to this script, in ./checkpoints, ../checkpoints)")
+
+
+def make_face_detectors():
+    """Full-range detector first (subjects up to ~5m), close-range fallback.
+
+    The close-range-only detector misses ~80% of faces on far-field footage
+    (e.g. a subject seated 2-3m from a 640x480 camera).
+    """
+    fd = mp.solutions.face_detection
+    return [
+        fd.FaceDetection(model_selection=1, min_detection_confidence=0.4),
+        fd.FaceDetection(model_selection=0, min_detection_confidence=0.5),
+    ]
+
+
+def detect_best_face(detectors, rgb):
+    """Highest-score detection across detectors (full-range first)."""
+    for det in detectors:
+        results = det.process(rgb)
+        if results.detections:
+            return max(results.detections, key=lambda d: d.score[0])
+    return None
 
 
 def get_transform():
@@ -86,24 +132,29 @@ def _try_start_realsense():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--checkpoint", default=DEFAULT_WEIGHTS, help="Path to the .pth weights.")
+    ap.add_argument("--model", default="MobileNetV2", choices=list(MODELS),
+                    help="Backbone architecture matching the weights.")
+    ap.add_argument("--checkpoint", default=None,
+                    help="Path to the .pth weights (default: best_<model>.pth).")
     ap.add_argument("--camera", type=int, default=0, help="Webcam index (fallback).")
     args = ap.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt = resolve_weights(args.checkpoint)
-    model = build_model()
+    build, default_weights = MODELS[args.model]
+    ckpt = (resolve_weights(args.checkpoint) if args.checkpoint
+            else resolve_default_weights(default_weights))
+    model = build()
     model.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
     model.to(device).eval()
     transform = get_transform()
     print("=" * 60)
+    print(f" model:   {args.model}")
     print(f" weights: {ckpt}")
     print(f" device:  {device}")
     print(f" labels:  {EMOTION_LABELS}")
     print("=" * 60)
 
-    face_detection = mp.solutions.face_detection.FaceDetection(
-        model_selection=0, min_detection_confidence=0.5)
+    detectors = make_face_detectors()
 
     pipeline, align = _try_start_realsense()
     if pipeline is not None:
@@ -131,16 +182,14 @@ def main():
                     print("Failed to read from webcam.")
                     break
 
-            results = face_detection.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            if results.detections:
+            det = detect_best_face(detectors, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            if det is not None:
                 h, w, _ = frame.shape
-                for det in results.detections:
-                    box = det.location_data.relative_bounding_box
-                    x, y = max(0, int(box.xmin * w)), max(0, int(box.ymin * h))
-                    bw, bh = int(box.width * w), int(box.height * h)
-                    face = frame[y:y + bh, x:x + bw]
-                    if face.size == 0:
-                        continue
+                box = det.location_data.relative_bounding_box
+                x, y = max(0, int(box.xmin * w)), max(0, int(box.ymin * h))
+                bw, bh = int(box.width * w), int(box.height * h)
+                face = frame[y:y + bh, x:x + bw]
+                if face.size > 0:
                     pil = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
                     tensor = transform(pil).unsqueeze(0).to(device)
                     with torch.no_grad():

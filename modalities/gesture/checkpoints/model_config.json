@@ -19,15 +19,15 @@
   "conf_threshold": 0.6,
   "params": 683272,
   "checkpoint": "best_TCN.pth",
-  "trained": "2026-07-12",
+  "trained": "2026-07-15",
   "best_val": {
-    "accuracy": 0.9278,
-    "balanced_accuracy": 0.9293,
-    "f1_weighted": 0.9278,
-    "f1_macro": 0.9238,
-    "epoch": 53,
-    "loss": 0.8145,
-    "train_acc": 0.957
+    "accuracy": 0.9324,
+    "balanced_accuracy": 0.9279,
+    "f1_weighted": 0.9324,
+    "f1_macro": 0.9277,
+    "epoch": 82,
+    "loss": 1.0511,
+    "train_acc": 0.9767
   },
   "train_config": {
     "model": "TCN",

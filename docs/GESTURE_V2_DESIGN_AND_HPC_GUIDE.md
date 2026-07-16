@@ -132,7 +132,7 @@ splits!), `A` = action.
 | A69 thumb up | `thumbs_up` | |
 | A70 thumb down | `thumbs_down` | |
 | A95 hands up (both hands) | `both_hands_up` | |
-| A22 cheer up | `both_hands_up` | visually verify a sample first; drop if it's fists-pumping rather than arms-up |
+| A22 cheer up | **dropped** | verified 2026-07-13: inconsistent (fist-pumping at shoulder height vs arms overhead) — excluded entirely, not used as a negative either |
 | A38 salute | `idle` (negative) | deliberately NOT `raise_hand` — hand-to-brow, not arm-up; useful confuser |
 | A1 drink water, A8 sit down, A10 clapping, A34 rub hands, A37 wipe face | `idle` | daily-action negatives, subsample ≤ 300 each |
 
@@ -182,7 +182,10 @@ Fusion-facing API, same shape as `MotionEngine`:
 
 **Splits** (enforced in `prepare_data.py`, stamped into the index CSVs):
 - Jester: keep official train/validation split.
-- NTU: split by **subject ID** (e.g., 20 % of subjects held out for test).
+- NTU: split by **subject ID**, **per label** (recorded change, 2026-07-15:
+  the original-60 and 120-extension setups have disjoint subject pools, so a
+  single global subject split left A23/A31 with zero val/test; per-label
+  splits fix that while keeping eval subjects unseen within each class).
 - Custom train pool: split by subject **per label** (recorded change,
   2026-07-11): with ≥5 subjects a label splits 70/15/15 subject-wise; with
   2–4 subjects the last (sorted) subject is held out entirely and its clips

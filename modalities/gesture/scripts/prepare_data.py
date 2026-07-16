@@ -72,11 +72,15 @@ def assign_splits(df):
     val_ids = df.loc[jm & (df["split_hint"] == "val"), "path"].str.extract(r"(\d+)")[0]
     split[val_ids.index] = np.where(val_ids.astype(int) % 2 == 0, "val", "test")
 
-    # ntu: subject-wise
+    # ntu: subject-wise PER LABEL (recorded change 2026-07-15): the original-60
+    # and 120-extension setups have disjoint subject pools, so one global
+    # 70/15/15 over sorted subjects put every A23/A31 subject into train
+    # (no point/wave val or test). Per-label splits keep subject purity in
+    # practice because each label draws from one pool with the same ordering.
     nm = df["dataset"] == "ntu"
-    if nm.any():
-        assign = subject_split(df.loc[nm, "subject"])
-        split[nm] = df.loc[nm, "subject"].map(assign)
+    for label, part in df.loc[nm].groupby("label"):
+        assign = subject_split(part["subject"])
+        split[part.index] = part["subject"].map(assign)
 
     # custom: live_test folder wins; the rest subject-wise PER LABEL, so a
     # class recorded by few people still gets subject-pure val/test data
