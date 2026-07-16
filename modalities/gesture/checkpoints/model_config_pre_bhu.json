@@ -21,13 +21,13 @@
   "checkpoint": "best_TCN.pth",
   "trained": "2026-07-15",
   "best_val": {
-    "accuracy": 0.9324,
-    "balanced_accuracy": 0.9279,
-    "f1_weighted": 0.9324,
-    "f1_macro": 0.9277,
-    "epoch": 82,
-    "loss": 1.0511,
-    "train_acc": 0.9767
+    "accuracy": 0.9361,
+    "balanced_accuracy": 0.9435,
+    "f1_weighted": 0.9362,
+    "f1_macro": 0.9365,
+    "epoch": 73,
+    "loss": 1.0689,
+    "train_acc": 0.974
   },
   "train_config": {
     "model": "TCN",
