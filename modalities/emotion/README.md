@@ -76,8 +76,7 @@ emotion/
 │   ├── evaluate.py                   # Stage 4  RAF-DB test-set evaluation
 │   ├── evaluate_realworld_cleaned.py       # real-world eval — train/val split ONLY, see caveat above
 │   ├── evaluate_realworld_video_sweep.py   # real-world eval (CNN+LSTM) — train/val split ONLY, see caveat above
-│   └── download_model.py             # fetches a GitHub Release — currently ships best_MobileNetV2.pth
-│                                      # (the weak baseline); no fine-tuned release has been published yet
+│   └── download_model.py             # fetches finetuned_MobileNetV2.pth from a GitHub Release
 ├── inference/
 │   ├── realtime_realsense.py   # live RealSense camera (self-contained)
 │   └── video.py                 # video file -> annotated mp4 (self-contained)
@@ -100,6 +99,29 @@ rewritten (a leak-free test-subject evaluator can be adapted from
 `evaluate_realworld_video_sweep.py` by changing which `data/realworld/`
 split(s) it scores against, or ported from this session's scratch eval
 scripts).
+
+## Pretrained model (use without retraining)
+
+The deployed weights are published as a versioned [GitHub Release](https://github.com/KesharaGunathilaka/adaptive-multimodal-hri/releases)
+(kept out of git so the repo stays lean). Fetch into `checkpoints/`:
+
+```bash
+python scripts/download_model.py                       # latest release
+python scripts/download_model.py --tag emotion-v3.0     # a specific version
+```
+
+### Publishing a new model version (maintainers)
+
+1. Tag the commit: `git tag emotion-vX.Y && git push origin emotion-vX.Y`.
+2. On GitHub: **Releases → Draft a new release →** choose that tag, add
+   notes (metrics from the table above), and **attach `finetuned_MobileNetV2.pth`**
+   as the release asset → Publish.
+3. `download_model.py` then serves it automatically (it points at the latest release).
+
+> Earlier releases (`emotion-v1.0`, `emotion-v2.0`) may have shipped
+> `best_MobileNetV2.pth` (the RAF-DB-only baseline) — verify which asset an
+> old release actually contains before relying on it; only trust a release
+> explicitly confirmed to contain `finetuned_MobileNetV2.pth`.
 
 ## Setup
 

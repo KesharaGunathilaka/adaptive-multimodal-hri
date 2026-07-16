@@ -77,6 +77,25 @@ Trained on public datasets + a small custom set (guide §4):
 Raw datasets live outside the repo — set `GESTURE_DATA_ROOT` (defaults to
 `data/raw/`), laid out per guide §4.
 
+## Pretrained model (use without retraining)
+
+The deployed weights are published as a versioned [GitHub Release](https://github.com/KesharaGunathilaka/adaptive-multimodal-hri/releases)
+(kept out of git). Fetches both `best_TCN.pth` and `model_config.json` —
+they must ship together, the config pins the exact architecture/labels/window:
+
+```bash
+python scripts/download_model.py                       # latest release
+python scripts/download_model.py --tag gesture-v2.1     # a specific version
+```
+
+### Publishing a new model version (maintainers)
+
+1. Tag the commit: `git tag gesture-vX.Y && git push origin gesture-vX.Y`.
+2. On GitHub: **Releases → Draft a new release →** choose that tag, add
+   notes (metrics from "Results" above), and **attach both `best_TCN.pth`
+   and `model_config.json`** as release assets → Publish.
+3. `download_model.py` then serves both automatically (it points at the latest release).
+
 ## Folder structure
 
 ```
@@ -94,7 +113,8 @@ gesture/
 │   ├── compare_models.py     # Stage 1  compare architectures -> pick winner
 │   ├── train.py              # Stage 2  full training (+ model_config.json)
 │   ├── tune.py               # Stage 3  optuna hyper-parameter tuning
-│   └── evaluate.py           # Stage 4  test + live-test + latency report
+│   ├── evaluate.py           # Stage 4  test + live-test + latency report
+│   └── download_model.py     # fetches best_TCN.pth + model_config.json from a GitHub Release
 ├── inference/
 │   ├── realtime_realsense.py # live RealSense / webcam dashboard
 │   └── video.py              # video files -> annotated mp4

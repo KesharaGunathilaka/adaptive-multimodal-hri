@@ -1,35 +1,28 @@
 """
-Download the released trained emotion model from GitHub Releases.
+Download the released trained motion model from GitHub Releases.
 
-Weights are published as GitHub Release assets (not stored in git) so the repo
+Weights are published as a GitHub Release asset (not stored in git) so the repo
 stays lean and each model version is a separate, downloadable release. By default
 this fetches the asset from the *latest* release, so you always get the newest
 version. Needs no extra packages and no GitHub auth (public release).
 
 Run:
     python scripts/download_model.py                 # latest version
-    python scripts/download_model.py --tag emotion-v3.0   # a specific version
-    python scripts/download_model.py --url <asset-url>    # explicit override
+    python scripts/download_model.py --tag motion-v1.0   # a specific version
 """
 import argparse
 import os
 import sys
 import urllib.request
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from config import CHECKPOINT_DIR
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+CHECKPOINT_DIR = os.path.join(SCRIPTS_DIR, "..", "checkpoints")
 
 REPO = "KesharaGunathilaka/adaptive-multimodal-hri"
-# finetuned_MobileNetV2.pth (RAF-DB + real-world fine-tune) is the deployed
-# checkpoint (92.5% acc / 90.1% macro-F1 on held-out test subjects). Earlier
-# releases (emotion-v1.0/v2.0) shipped best_MobileNetV2.pth, the RAF-DB-only
-# baseline (58.8%/38.9% on the same test subjects) — do not revert this.
-ASSET = "finetuned_MobileNetV2.pth"
-# GitHub serves the latest release's asset at a stable URL:
-#   https://github.com/<owner>/<repo>/releases/latest/download/<asset>
-# and a specific version at:
-#   https://github.com/<owner>/<repo>/releases/download/<tag>/<asset>
+# best_model_finetuned.pt (NTU-pretrained, fine-tuned on this project's real
+# intent-video clips) is the deployed checkpoint (76.8% acc / 73.2% macro-F1
+# on held-out test subjects).
+ASSET = "best_model_finetuned.pt"
 LATEST_URL = f"https://github.com/{REPO}/releases/latest/download/{ASSET}"
 
 
@@ -45,7 +38,7 @@ def _progress(block_num, block_size, total_size):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tag", default=None, help="Release tag, e.g. emotion-v1.0 (default: latest).")
+    ap.add_argument("--tag", default=None, help="Release tag, e.g. motion-v1.0 (default: latest).")
     ap.add_argument("--url", default=None, help="Explicit asset URL (overrides --tag).")
     ap.add_argument("--out", default=os.path.join(CHECKPOINT_DIR, ASSET), help="Destination path.")
     ap.add_argument("--force", action="store_true", help="Re-download even if it exists.")

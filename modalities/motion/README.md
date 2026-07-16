@@ -18,12 +18,16 @@ Targeted at **Jetson Orin Nano**.
 |---|---|---|
 | `best_model.pt` | NTU only (4-class) | 96.7% val (window-level, synthetic NTU benchmark) |
 | `best_model_6class.pt` | NTU only (6-class, +running/slumped) | 95.9% val (synthetic) |
-| **`best_model_finetuned.pt` (deployed)** | NTU + real intent-dataset clips | **86.8%** clip-level on real held-out video (85.1% on unseen subjects specifically) |
+| **`best_model_finetuned.pt` (deployed)** | NTU + real intent-dataset clips | **76.8% acc / 73.2% macro-F1** on strictly held-out test subjects, all 1,061 real clips |
 
-Full-dataset check (all 1,061 clips, every subject): sitting 99% F1,
-standing 78-82% F1 (100% recall, 64-70% precision — over-triggers),
-walking 83-89% F1, **stepping_back the weak class — 41-58% recall
-depending on split**.
+That test-subject split happens to contain **zero `sitting` clips** (a data
+gap, not a model failure — sitting is otherwise the easiest class at ~99%
+F1 on train/val subjects), so this number is a harder, 3-class-effective
+estimate, not diluted by the easy class. Per-class on test subjects:
+standing 78% F1 (100% recall, 64% precision — over-triggers), walking 83%
+F1 (71% recall), **stepping_back 58% F1 (41% recall) — the weak class**.
+An earlier, smaller 205-clip mixed-subject check read 86.8%/85.1%; the
+1,061-clip test-only number above is the one to trust.
 
 **Known weakness, now confirmed on the full dataset: `stepping_back` fails
 specifically in the kitchen environment, for every subject (train and test
@@ -54,6 +58,24 @@ See `reports/TRAINING_NOTES.txt` for the plan to expose z-velocity to
 fusion, which would give the classifier back the translation signal it
 currently discards by design.
 
+## Pretrained model (use without retraining)
+
+The deployed weights are published as a versioned [GitHub Release](https://github.com/KesharaGunathilaka/adaptive-multimodal-hri/releases)
+(kept out of git). Fetch into `checkpoints/`:
+
+```bash
+python scripts/download_model.py                      # latest release
+python scripts/download_model.py --tag motion-v1.0     # a specific version
+```
+
+### Publishing a new model version (maintainers)
+
+1. Tag the commit: `git tag motion-vX.Y && git push origin motion-vX.Y`.
+2. On GitHub: **Releases → Draft a new release →** choose that tag, add
+   notes (metrics from "Results" above), and **attach `best_model_finetuned.pt`**
+   as the release asset → Publish.
+3. `download_model.py` then serves it automatically (it points at the latest release).
+
 ## Folder structure
 
 ```
@@ -70,7 +92,8 @@ motion/
 │   ├── tune.py                 # optuna hyper-parameter search
 │   ├── finetune.py             # fine-tune best_model.pt on struct windows
 │   ├── batch_process_videos.py # run inference/video.py over a folder
-│   └── explore_skeleton.py     # NTU skeleton EDA helper
+│   ├── explore_skeleton.py     # NTU skeleton EDA helper
+│   └── download_model.py       # fetches best_model_finetuned.pt from a GitHub Release
 ├── inference/
 │   ├── realtime.py         # live webcam demo (skeleton overlay + prediction)
 │   └── video.py            # video file -> annotated mp4 (--save -> outputs/)
