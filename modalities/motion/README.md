@@ -14,16 +14,45 @@ Targeted at **Jetson Orin Nano**.
 
 ## Results
 
-| Checkpoint | Data | Val / clip accuracy |
+| Checkpoint | Data | Accuracy |
 |---|---|---|
-| `best_model.pt` | NTU only (4-class) | 96.7% val (window-level) |
-| `best_model_6class.pt` | NTU only (6-class, +running/slumped) | 95.9% val |
-| **`best_model_finetuned.pt` (deployed)** | NTU + struct train scenarios | **82.6%** clip-level on held-out scenarios (baseline: 27.4%) |
+| `best_model.pt` | NTU only (4-class) | 96.7% val (window-level, synthetic NTU benchmark) |
+| `best_model_6class.pt` | NTU only (6-class, +running/slumped) | 95.9% val (synthetic) |
+| **`best_model_finetuned.pt` (deployed)** | NTU + real intent-dataset clips | **86.8%** clip-level on real held-out video (85.1% on unseen subjects specifically) |
 
-Per-class (fine-tuned, held-out test clips): sitting F1 0.90, standing 0.96,
-walking 0.77, stepping_back 0.48. Known weakness: slow walking **toward** the
-camera reads as standing (translation is normalized away — see
-`reports/TRAINING_NOTES.txt` for the plan to expose z-velocity to fusion).
+Full-dataset check (all 1,061 clips, every subject): sitting 99% F1,
+standing 78-82% F1 (100% recall, 64-70% precision — over-triggers),
+walking 83-89% F1, **stepping_back the weak class — 41-58% recall
+depending on split**.
+
+**Known weakness, now confirmed on the full dataset: `stepping_back` fails
+specifically in the kitchen environment, for every subject (train and test
+alike) — this is an environment/recording issue, not a subject-generalization
+gap.** All three kitchen stepping_back scenarios fail almost completely
+regardless of who's in the clip:
+
+| Scenario | Env | n clips | Motion accuracy | What it predicts instead |
+|---|---|---|---|---|
+| `S06_F08` | classroom | 55 | **100%** | — |
+| `S19_F02` | kitchen | 46 | **0%** | "standing", always |
+| `S23_F08` | kitchen | 19 | **5%** | "walking" mostly |
+| `S26_F02` | kitchen | 32 | **0%** | "standing", nearly always |
+
+Since it fails for train-subject clips just as badly as test-subject clips
+in the same scenarios, this isn't the model failing to generalize to new
+people — something about the kitchen recording setup (camera distance/angle,
+counter occlusion, or simply less pronounced backward steps in that space)
+is defeating the feature pipeline. The model's features are hip-centered and
+shoulder-normalized (global translation deliberately removed by design), so
+a backward step with limited visible limb swing loses most of its signal —
+consistent with `S08_F06` (walking *toward* the camera, classroom) also
+scoring only 26-36%. **Recommended next step: pull up the raw `S19_F02` /
+`S26_F02` clips and check camera distance/framing before retraining** — if
+it's a framing issue, more training data won't fix it; if it's a genuine
+data gap (kitchen stepping-back under-represented in fine-tuning), it will.
+See `reports/TRAINING_NOTES.txt` for the plan to expose z-velocity to
+fusion, which would give the classifier back the translation signal it
+currently discards by design.
 
 ## Folder structure
 
