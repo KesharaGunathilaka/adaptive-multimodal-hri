@@ -84,6 +84,12 @@ Flags: `--save` (annotated mp4 + per-frame JSON log), `--no-show` (headless),
 - **CNN baseline** (EfficientNet-B0, 2-class) remains for comparison; switch via
   `SCENE_BACKEND = "cnn"`. Benchmark on 1,109 captured clips:
   CLIP 99.5% vs CNN 82.2% (`reports/zero_shot/ZERO_SHOT_REPORT.md`).
+  Independently re-confirmed 2026-07-16 on the project's real intent-dataset
+  video (`data/`, 4 frames/clip, mean-softmax): **98.0% / 98.7% macro-F1
+  across all 1,061 clips** (98.8%/99.3% on strictly held-out test subjects),
+  99.5% on an earlier 205-clip held-out subset, 100% on an earlier 168-clip
+  subset — consistently near-perfect across every check, no known failure
+  modes. This is the strongest of the four modalities.
 - The full training pipeline for the CNN (compare → train → tune → evaluate)
   lives in `scene_classification/scripts/`.
 - Standalone self-contained inference scripts (no project imports):
