@@ -28,7 +28,12 @@ from torchvision import transforms
 
 # ── Configuration (edit these to ship a different model) ──────────────────
 EMOTION_LABELS = ["Surprise", "Fear", "Disgust", "Happy", "Sad", "Anger", "Neutral"]
-DEFAULT_WEIGHTS = "best_MobileNetV2.pth"   # filename of the trained weights
+# finetuned_MobileNetV2.pth (RAF-DB + real-world fine-tune) is the deployed
+# checkpoint: 92.5% acc / 90.1% macro-F1 on held-out test subjects vs.
+# best_MobileNetV2.pth's (RAF-DB-only) 58.8% / 38.9% — the RAF-DB-only
+# baseline collapses on far-field faces. Do not point this back at
+# best_MobileNetV2.pth without re-verifying against test-subject clips.
+DEFAULT_WEIGHTS = "finetuned_MobileNetV2.pth"   # filename of the trained weights
 IMAGE_SIZE = 224
 MAX_FRAME_WIDTH = 640                       # downscale wide frames before detection
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv"}

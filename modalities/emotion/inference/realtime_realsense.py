@@ -35,7 +35,12 @@ except ImportError:
 
 # ── Configuration (edit these to ship a different model) ──────────────────
 EMOTION_LABELS = ["Surprise", "Fear", "Disgust", "Happy", "Sad", "Anger", "Neutral"]
-DEFAULT_WEIGHTS = "best_MobileNetV2.pth"
+# finetuned_MobileNetV2.pth (RAF-DB + real-world fine-tune) is the deployed
+# checkpoint: 92.5% acc / 90.1% macro-F1 on held-out test subjects vs.
+# best_MobileNetV2.pth's (RAF-DB-only) 58.8% / 38.9% — the RAF-DB-only
+# baseline collapses on far-field faces. Do not point this back at
+# best_MobileNetV2.pth without re-verifying against test-subject clips.
+DEFAULT_WEIGHTS = "finetuned_MobileNetV2.pth"
 IMAGE_SIZE = 224
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
