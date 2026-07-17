@@ -1,0 +1,363 @@
+{
+  "rule_based": {
+    "train": {
+      "window": {
+        "acc": 0.798,
+        "macro_f1": 0.6189
+      },
+      "clip": {
+        "acc": 0.8132,
+        "macro_f1": 0.6303
+      },
+      "n_windows": 13161,
+      "n_clips": 846
+    },
+    "val": {
+      "window": {
+        "acc": 0.769,
+        "macro_f1": 0.5852
+      },
+      "clip": {
+        "acc": 0.7875,
+        "macro_f1": 0.6414
+      },
+      "n_windows": 831,
+      "n_clips": 80
+    },
+    "test": {
+      "window": {
+        "acc": 0.6663,
+        "macro_f1": 0.4798
+      },
+      "clip": {
+        "acc": 0.6951,
+        "macro_f1": 0.4521
+      },
+      "n_windows": 1019,
+      "n_clips": 82
+    }
+  },
+  "unimodal_emotion": {
+    "train": {
+      "window": {
+        "acc": 0.6919,
+        "macro_f1": 0.5229
+      },
+      "clip": {
+        "acc": 0.682,
+        "macro_f1": 0.5148
+      },
+      "n_windows": 13161,
+      "n_clips": 846
+    },
+    "val": {
+      "window": {
+        "acc": 0.3742,
+        "macro_f1": 0.3882
+      },
+      "clip": {
+        "acc": 0.425,
+        "macro_f1": 0.4166
+      },
+      "n_windows": 831,
+      "n_clips": 80
+    },
+    "test": {
+      "window": {
+        "acc": 0.6379,
+        "macro_f1": 0.3709
+      },
+      "clip": {
+        "acc": 0.7317,
+        "macro_f1": 0.4364
+      },
+      "n_windows": 1019,
+      "n_clips": 82
+    }
+  },
+  "unimodal_gesture": {
+    "train": {
+      "window": {
+        "acc": 0.6095,
+        "macro_f1": 0.3722
+      },
+      "clip": {
+        "acc": 0.6052,
+        "macro_f1": 0.3558
+      },
+      "n_windows": 13161,
+      "n_clips": 846
+    },
+    "val": {
+      "window": {
+        "acc": 0.7762,
+        "macro_f1": 0.4057
+      },
+      "clip": {
+        "acc": 0.75,
+        "macro_f1": 0.4141
+      },
+      "n_windows": 831,
+      "n_clips": 80
+    },
+    "test": {
+      "window": {
+        "acc": 0.42,
+        "macro_f1": 0.2376
+      },
+      "clip": {
+        "acc": 0.4268,
+        "macro_f1": 0.2269
+      },
+      "n_windows": 1019,
+      "n_clips": 82
+    }
+  },
+  "unimodal_motion": {
+    "train": {
+      "window": {
+        "acc": 0.4206,
+        "macro_f1": 0.2362
+      },
+      "clip": {
+        "acc": 0.4078,
+        "macro_f1": 0.2337
+      },
+      "n_windows": 13161,
+      "n_clips": 846
+    },
+    "val": {
+      "window": {
+        "acc": 0.4609,
+        "macro_f1": 0.225
+      },
+      "clip": {
+        "acc": 0.4125,
+        "macro_f1": 0.2624
+      },
+      "n_windows": 831,
+      "n_clips": 80
+    },
+    "test": {
+      "window": {
+        "acc": 0.473,
+        "macro_f1": 0.222
+      },
+      "clip": {
+        "acc": 0.5122,
+        "macro_f1": 0.2337
+      },
+      "n_windows": 1019,
+      "n_clips": 82
+    }
+  },
+  "unimodal_context": {
+    "train": {
+      "window": {
+        "acc": 0.2346,
+        "macro_f1": 0.1008
+      },
+      "clip": {
+        "acc": 0.227,
+        "macro_f1": 0.1017
+      },
+      "n_windows": 13161,
+      "n_clips": 846
+    },
+    "val": {
+      "window": {
+        "acc": 0.3562,
+        "macro_f1": 0.0932
+      },
+      "clip": {
+        "acc": 0.3,
+        "macro_f1": 0.0946
+      },
+      "n_windows": 831,
+      "n_clips": 80
+    },
+    "test": {
+      "window": {
+        "acc": 0.1295,
+        "macro_f1": 0.1355
+      },
+      "clip": {
+        "acc": 0.1463,
+        "macro_f1": 0.1502
+      },
+      "n_windows": 1019,
+      "n_clips": 82
+    }
+  },
+  "concat_mlp_seeds": [
+    {
+      "train": {
+        "window": {
+          "acc": 0.974,
+          "macro_f1": 0.8744
+        },
+        "clip": {
+          "acc": 0.9835,
+          "macro_f1": 0.8856
+        },
+        "n_windows": 13161,
+        "n_clips": 846
+      },
+      "val": {
+        "window": {
+          "acc": 0.9182,
+          "macro_f1": 0.7496
+        },
+        "clip": {
+          "acc": 0.95,
+          "macro_f1": 0.7731
+        },
+        "n_windows": 831,
+        "n_clips": 80
+      },
+      "test": {
+        "window": {
+          "acc": 0.9323,
+          "macro_f1": 0.6297
+        },
+        "clip": {
+          "acc": 0.9146,
+          "macro_f1": 0.6063
+        },
+        "n_windows": 1019,
+        "n_clips": 82
+      }
+    },
+    {
+      "train": {
+        "window": {
+          "acc": 0.9827,
+          "macro_f1": 0.8849
+        },
+        "clip": {
+          "acc": 0.9894,
+          "macro_f1": 0.8911
+        },
+        "n_windows": 13161,
+        "n_clips": 846
+      },
+      "val": {
+        "window": {
+          "acc": 0.9182,
+          "macro_f1": 0.7365
+        },
+        "clip": {
+          "acc": 0.9125,
+          "macro_f1": 0.7331
+        },
+        "n_windows": 831,
+        "n_clips": 80
+      },
+      "test": {
+        "window": {
+          "acc": 0.9392,
+          "macro_f1": 0.6348
+        },
+        "clip": {
+          "acc": 0.939,
+          "macro_f1": 0.6289
+        },
+        "n_windows": 1019,
+        "n_clips": 82
+      }
+    },
+    {
+      "train": {
+        "window": {
+          "acc": 0.9741,
+          "macro_f1": 0.8742
+        },
+        "clip": {
+          "acc": 0.9823,
+          "macro_f1": 0.8849
+        },
+        "n_windows": 13161,
+        "n_clips": 846
+      },
+      "val": {
+        "window": {
+          "acc": 0.9254,
+          "macro_f1": 0.7501
+        },
+        "clip": {
+          "acc": 0.9625,
+          "macro_f1": 0.7866
+        },
+        "n_windows": 831,
+        "n_clips": 80
+      },
+      "test": {
+        "window": {
+          "acc": 0.9303,
+          "macro_f1": 0.6225
+        },
+        "clip": {
+          "acc": 0.939,
+          "macro_f1": 0.6289
+        },
+        "n_windows": 1019,
+        "n_clips": 82
+      }
+    }
+  ],
+  "concat_mlp": {
+    "train.window.acc": {
+      "mean": 0.9769,
+      "std": 0.0041
+    },
+    "train.window.macro_f1": {
+      "mean": 0.8778,
+      "std": 0.005
+    },
+    "train.clip.acc": {
+      "mean": 0.9851,
+      "std": 0.0031
+    },
+    "train.clip.macro_f1": {
+      "mean": 0.8872,
+      "std": 0.0028
+    },
+    "val.window.acc": {
+      "mean": 0.9206,
+      "std": 0.0034
+    },
+    "val.window.macro_f1": {
+      "mean": 0.7454,
+      "std": 0.0063
+    },
+    "val.clip.acc": {
+      "mean": 0.9417,
+      "std": 0.0212
+    },
+    "val.clip.macro_f1": {
+      "mean": 0.7643,
+      "std": 0.0227
+    },
+    "test.window.acc": {
+      "mean": 0.9339,
+      "std": 0.0038
+    },
+    "test.window.macro_f1": {
+      "mean": 0.629,
+      "std": 0.005
+    },
+    "test.clip.acc": {
+      "mean": 0.9309,
+      "std": 0.0115
+    },
+    "test.clip.macro_f1": {
+      "mean": 0.6214,
+      "std": 0.0107
+    }
+  },
+  "_meta": {
+    "created": "2026-07-17 10:29:07",
+    "features": "features_v1.parquet",
+    "note": "val/test are actor-disjoint subject splits of the 22 recorded TRAIN scenarios; the V3 test scenarios are not recorded yet. F10 has no supervised rows (S28 pooled)."
+  }
+}
