@@ -7,6 +7,12 @@ main repo; each model's full training pipeline, alternate checkpoints, and
 evaluation reports stay in the main repo (not copied here — this folder is
 inference-only).
 
+> **Working on the Jetson itself with a Claude Code / VS Code agent?** Rename
+> `HANDOVER_CLAUDE.md` (in this folder) to `CLAUDE.md` so it auto-loads —
+> it's the onboarding doc for a fresh agent session on that machine, and
+> points to `JETSON_SETUP_GUIDE.md` (full step-by-step setup) and
+> `JETSON_TEST_LOG.md` (where to record findings) also in this folder.
+
 ## What's in here
 
 ```
