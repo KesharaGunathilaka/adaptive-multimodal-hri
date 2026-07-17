@@ -42,6 +42,65 @@
 
 ---
 
+## 2026-07-17 — [WIN-3060] — Fusion Phase 1: feature-extraction pipeline built & running
+
+**Decision:** Phase 1 (extraction → baselines → fusion training) stays on WIN-3060 — the curated
+dataset and verified checkpoints live here; the 5090 is only needed if a unimodal retrain becomes
+necessary later.
+
+**Did:**
+- Built the two-pass extraction pipeline (`fusion/extraction/`):
+  - **Pass 1** `scripts/02_extract_perframe.py` → `data/features/perframe/<clip_id>.npz` —
+    one decode per clip: MediaPipe **Holistic** (one pass serves gesture image-landmarks AND
+    motion world-landmarks), emotion's robust face detector + MobileNetV2 per frame, CLIP scene
+    probs at ~3 Hz. Resumable (skips existing npz).
+  - **Pass 2** `scripts/03_build_features.py` → `features_v1.parquet` + `manifest.json`
+    (checkpoint sha256s, class orders, window params). Re-runnable without touching videos.
+- **Windowing is TIME-based** (mixed 15/24/30 fps clips): stride 8/30 s; per-cue lookbacks match
+  each model's training statistics — gesture 2.133 s→32 frames (mirrors ENGINE_BUFFER_FRAMES),
+  motion 2.0 s→30 frames (dt≈1/15 like training), emotion mean over last 0.267 s (widen to 2.13 s
+  before declaring missing), context mean over last 1 s. Per-cue runtime-missing = NaN probs +
+  `*_obs=False` + coverage ratio — distinct from the scenario-designed `missing_designed` flag.
+- Modality code reused via `fusion/extraction/modloader.py` (isolates the four packages'
+  colliding `config`/`src`/`model` module names).
+- Smoke test (3 clips): S01_F04 windows → Neutral 0.73 / raise_hand 0.995 / sitting 1.0 /
+  classroom 0.996 — all four cues correct, all softmax sums = 1.0.
+
+**Problems / fixes:**
+- `.venv` had no pyarrow (and no pip — uv-managed): `uv pip install pyarrow --python .venv/Scripts/python.exe`.
+- Context CLIP weights resolve from `jetson_deploy/hf_cache` via `HF_HOME` (set in perframe.py) —
+  no download needed on either machine.
+
+**State / artifacts (end of session):**
+- Pass 1 complete: **1,061/1,061 clips extracted, 0 failures** (~2.2 h) → `data/features/perframe/`.
+- Pass 2 complete: **`features_v1.parquet` = 15,892 windows**, obs rates emo 1.0 / ges 0.998 /
+  mot 0.998 / ctx 1.0; `manifest.json` records checkpoint sha256s + class orders + window params.
+- **Per-cue agreement vs intended labels** (windows, macro over scenarios): emotion 0.94,
+  context 0.97, gesture 0.75, motion 0.81. Systematic failures confirmed: static `point` ~0
+  (S03/S22), weak `wave` (S25 0.24), kitchen `stepping_back` ~0 (S19/S23/S26). S28 actors DID
+  perform thumbs_down (0.76 detected) — validates pooling it instead of training F10 on it.
+- **Baselines run** (`scripts/04_run_baselines.py` → `fusion/baselines/RESULTS.md`), actor-disjoint
+  test subjects (82 clips), clip-level majority vote:
+  | model | clip acc | clip macro-F1 |
+  |---|---|---|
+  | rule-based (V3 rubric, no direction) | 0.695 | 0.452 |
+  | unimodal emotion | 0.732 | 0.436 |
+  | unimodal gesture | 0.427 | 0.227 |
+  | unimodal motion | 0.512 | 0.234 |
+  | unimodal context | 0.146 | 0.150 |
+  | **concat-MLP (3 seeds)** | **0.931±0.011** | **0.621±0.011** |
+  G1 evidence already visible: naive fusion 93% vs best unimodal 73% vs rules 70%. macro-F1 is
+  capped at 0.9 because F10 has zero supervised rows (S28 pooled) — recombination augmentation
+  (Phase 2) is what fills F10.
+- NOTE: this val/test = subject-splits of recorded TRAIN scenarios; the V3 test scenarios are
+  unrecorded, so T01–T05 numbers are not yet measurable.
+
+**Next:** attention fusion model (`fusion/model/`) + modality dropout, beat concat-MLP; then
+recombination/jitter augmentation (fills F10 + unrecorded V3 rows); trial ONNX export of all
+4 models + fusion head.
+
+---
+
 ## 2026-07-16 — [WIN-3060] — Fusion Phase 0: audit & documentation bootstrap
 
 **Did:**
