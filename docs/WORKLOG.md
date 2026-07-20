@@ -1,5 +1,38 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-07-17 (later) — [WIN-3060] — Phase 2: attention fusion, augmentation, T03 sweep
+
+**Did:**
+- Built `fusion/model/`: `model.py` (attention fusion, 4 cue tokens + CLS, d=64, 2 layers, ~110K
+  params; `missing_mode='token'` learned [MISSING] embedding OR `'exclude'` key-padding mask),
+  `datasets.py` (modality dropout ≤2 cues + confidence jitter, train-only), `recombine.py`
+  (cue recombination: 7,600 synthetic windows for the 19 unrecorded V3 train rows incl. all F10;
+  V3 #18 skipped — cue-identical to #1 without direction; sources = train-subject windows only,
+  S28 pool used as sources).
+- `scripts/05_train_fusion.py`: ablation grid × 3 seeds + T03 masking sweep →
+  `results/fusion_v1/{results.json, RESULTS.md, attn_robust_best.pt}`.
+- `scripts/06_robustness_experiments.py`: follow-up after a negative result (below) →
+  `results/fusion_v1/robustness.json`.
+
+**Results (actor-disjoint test, clip-level):**
+- Full cues: attn_do_jit **0.951±0.017** > concat-MLP 0.931±0.011 > best unimodal 0.732 > rules 0.695.
+- attn_full (with recombination) 0.943±0.006, best macro-F1 0.649±0.005 (recombination gives F10
+  supervision; lowest seed variance).
+- **Negative result worth keeping:** token-substitution attention degraded WORSE under cue
+  masking than the plain concat-MLP (gesture masked 0.63 vs 0.88). Fixes tried:
+  (1) masked-val model selection (`select_masked`) + dropout 0.3 — helped;
+  (2) `missing_mode='exclude'` (architectural marginalization) — attn_exclude ≈ dropout-trained
+  MLP within noise on every mask. Conclusion: at 24-dim input, missing-cue robustness comes from
+  dropout training + marginalization, NOT from a learned [MISSING] token — thesis ablation point.
+- Emotion is the load-bearing cue (masking it costs ~28 points); emotion+gesture masked → ~0.30
+  (genuinely ambiguous under the table's own rubric → F05 default territory).
+
+**Next:** pick deployed config (recommend attn_exclude w/ dropout+jitter+recombination —
+attention-weight interpretability for thesis, equal robustness); G3 spotlight table; window-size
+sweep (W=8/16/32/64 from perframe caches — no re-extraction needed); trial ONNX export (4 models
++ fusion head); intent→action policy module.
+
+
 > **Purpose.** Two machines work on this branch (`deploy`): the Windows laptop and the Ubuntu HPC.
 > Code and docs sync via git; **checkpoints and datasets are gitignored and copied manually** — that
 > mismatch is what caused past "model conflict" losses. This file + `checkpoint_manifest.sha256`

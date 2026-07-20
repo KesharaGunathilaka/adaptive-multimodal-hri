@@ -1,5 +1,12 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-07-17 [WIN-3060]** Fusion model selection uses **masked-val early stopping** (mean of
+  unmasked + 4 single-masked val accuracies) — plain val selection picked robustness-poor epochs.
+- **2026-07-17 [WIN-3060]** Recombination skips V3 #18 (classroom happy+wave+walk F09): without
+  direction it is cue-identical to recorded #1 (F01) — synthesizing it would inject label noise.
+- **2026-07-17 [WIN-3060]** Missing cues handled by **attention exclusion** (key-padding mask)
+  rather than a learned [MISSING] token — token substitution measurably hurt masked accuracy.
+
 - **2026-07-16 [WIN-3060] (user)** S21/S28 label collision: S21 → F04 training; S28 (53 clips) →
   `recombination_pool` (synthetic-generation inputs), promotable to F10 if gesture model says `idle`.
 - **2026-07-16 [WIN-3060] (user)** S05 relabeled F02 → F07 per V3 row #14 (folder name unchanged).
