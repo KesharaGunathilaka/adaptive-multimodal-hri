@@ -24,3 +24,10 @@ tabulate
 ultralytics
 pyrealsense2>=2.54.0
 optuna # For hyperparameter tuning in the scene classification module
+# Fusion pipeline (added 2026-07-20). protobuf MUST stay ==3.20.3: newer
+# protobuf breaks mediapipe 0.10.x; onnx is pinned to the last version
+# compatible with that protobuf.
+pyarrow
+protobuf==3.20.3
+onnx==1.14.1
+onnxruntime

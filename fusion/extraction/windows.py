@@ -42,8 +42,13 @@ def uniform_indices(n, target):
 
 
 class WindowFeaturizer:
-    def __init__(self, device=None):
+    def __init__(self, device=None, scale=1.0):
+        """`scale` multiplies the gesture/motion lookback spans (window-size
+        sweep, handover §8.3). Emotion/context spans and the stride stay fixed
+        — the sweep varies temporal context, not the output grid."""
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.ges_span = GES_SPAN * scale
+        self.mot_span = MOT_SPAN * scale
 
         # ── Gesture TCN (arch/labels pinned by model_config.json) ─────────
         gm = load_module("hri_gesture_models", GES_DIR / "src" / "models.py", [GES_DIR])
@@ -90,7 +95,7 @@ class WindowFeaturizer:
         face_valid = npz["face_valid"]
         ctx_t = npz["context_frames"] / fps
 
-        first = max(GES_SPAN, MOT_SPAN)
+        first = max(self.ges_span, self.mot_span)
         ends = np.arange(first, dur + 1e-9, STRIDE_SEC)
         if len(ends) == 0:                      # clip shorter than the lookback
             ends = np.array([dur])
@@ -100,23 +105,23 @@ class WindowFeaturizer:
             row = {"window_idx": wi, "t_end": round(float(t_end), 3)}
 
             # gesture
-            m = (times > t_end - GES_SPAN) & (times <= t_end) & pose_valid
+            m = (times > t_end - self.ges_span) & (times <= t_end) & pose_valid
             idx = np.flatnonzero(m)
-            row["ges_cov"] = len(idx) / max(1, round(GES_SPAN * fps))
+            row["ges_cov"] = len(idx) / max(1, round(self.ges_span * fps))
             if len(idx) >= GES_MIN_FRAMES:
                 sel = idx[uniform_indices(len(idx), self.ges_window)]
                 ges_batch.append((wi, npz["gesture_feats"][sel]))
 
             # motion
-            m = (times > t_end - MOT_SPAN) & (times <= t_end) & pose_valid
+            m = (times > t_end - self.mot_span) & (times <= t_end) & pose_valid
             idx = np.flatnonzero(m)
-            row["mot_cov"] = len(idx) / max(1, round(MOT_SPAN * fps))
+            row["mot_cov"] = len(idx) / max(1, round(self.mot_span * fps))
             if len(idx) >= MOT_MIN_FRAMES:
                 sel = idx[uniform_indices(len(idx), self.mot_window)]
                 mot_batch.append((wi, self._motion_window_feats(npz["joints25"][sel])))
 
             # emotion (widen to gesture span if the short span has no face)
-            for span in (EMO_SPAN, GES_SPAN):
+            for span in (EMO_SPAN, self.ges_span):
                 m = (times > t_end - span) & (times <= t_end) & face_valid
                 if m.any():
                     row["emo_probs"] = np.nanmean(npz["emotion_probs"][m], axis=0)

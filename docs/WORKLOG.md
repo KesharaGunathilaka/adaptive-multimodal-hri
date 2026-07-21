@@ -1,5 +1,73 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-07-20 (later) — [WIN-3060] — Jetson streaming pipeline + inference guide
+
+**Did:**
+- `jetson_deploy/fusion/pipeline.py` — streaming pipeline: one Holistic pass per frame feeding
+  gesture+motion, rolling time-based buffers, fusion every stride (8/30 s), majority-vote
+  smoothing (N=3) + hysteresis (2 consecutive), F02 emergency bypass (skips both), policy layer.
+  Backends: `--backend torch|onnx`. Sources: `realsense` / camera index / video file.
+  **Windowing mirrors `fusion/extraction/windows.py` exactly** — any change must be made on both
+  sides or train/serve skew silently costs accuracy.
+- `jetson_deploy/fusion/{model.py,policy.py}` — self-contained copies (noted as copies in their
+  headers; re-copy + re-export ONNX if the originals change).
+- `jetson_deploy/fusion/profile_latency.py` — per-component profiler with the 300 ms budget check.
+- `jetson_deploy/JETSON_INFERENCE_GUIDE.md` — setup, run commands, expected output, profiling,
+  tuning ladder, robot-integration snippet.
+
+**Verified on real clips (both backends):** S01_F04 (raise hand/neutral/sit) → steady F04→A05;
+S19_F02 (fear/both hands up/step back/kitchen) → F02→A02 with EMERGENCY on every step.
+
+**Problems / fixes:**
+- My first profiler derived "per-stride = 8 × holistic + step" → falsely reported 550 ms OVER
+  BUDGET. Wrong: frames are processed as they arrive (pipelined), so capture→intent latency is
+  ONE holistic pass + step work. Corrected → **125 ms mean / 267 ms p95 on the 3060, within the
+  300 ms budget**. Throughput is the separate constraint (Holistic caps input ~18 fps → ~5 fresh
+  frames per stride, which is fine because windowing is time-based and training clips were 15 fps).
+
+**Reference latency (RTX 3060, ONNX):** holistic 55 ms/frame; per step emotion 46, context 19
+(only every 1 s), gesture 2.4, motion 3.0, fusion <1 ms.
+
+**Next:** run `fusion/profile_latency.py` ON THE JETSON and record numbers here; tuning ladder is
+in the guide §4 (onnx → Holistic model_complexity=0 → fewer emotion frames → larger stride;
+never shrink lookback spans).
+
+## 2026-07-20 — [WIN-3060] — Phase 3: deployed model, ONNX, G3/window-sweep/policy
+
+**Did:**
+- **Final deployed fusion model** (`scripts/07_finalize_fusion.py`) →
+  `jetson_deploy/fusion/fusion_attn.pt` + `fusion_config.json`. Config: attn exclude-mode,
+  dropout 0.3, jitter 0.15, recombination, masked-val selection. Test clip acc **0.939 on all
+  3 seeds** (chose seed 1 by masked-val score 0.8094).
+- **Trial ONNX export PASSED for all 4 nets** (`scripts/08_export_onnx.py` →
+  `jetson_deploy/onnx/`): emotion MobileNetV2, gesture TCN, motion LSTM, fusion attention
+  (incl. the exclude-mode padding mask) — max |native−ORT| ≈ 1e-6, opset 17. The schedule's
+  biggest risk is retired. Context/CLIP deliberately NOT exported (runs PyTorch from the bundled
+  HF cache on Jetson; revisit only if latency profiling demands TensorRT).
+- **G3 spotlight** (`scripts/09_g3_spotlight.py` → `results/fusion_v1/G3_SPOTLIGHT.md`):
+  13/14 same-gesture cases resolve to the correct intent across emotion/context flips
+  (miss: S24 kitchen angry both-hands-up, 2 test clips split F06/F07).
+- **Window sweep** (`scripts/10_window_sweep.py` → `window_sweep.json`), spans ×0.5/×1/×2:
+  test clip acc **0.976 / 0.951 / 0.756**. Shorter (1.07 s) lookback is BETTER and cheaper —
+  ×2 (4 s) exceeds clip length and collapses. Deployed model stays on ×1 (matches the unimodal
+  engines' validated buffers); try ×0.5 during Jetson profiling.
+- **Intent→action policy** (`fusion/actions/policy.py`, demo `scripts/11_policy_demo.py` →
+  `POLICY_DEMO.md`): V3 legend mapping, τ=0.5 fallback→F05/A06, F02 bypass τ=0.30 with
+  context-routed hazard action (classroom→A14, kitchen→A02/A03). **F02 safety: 22/22 test
+  emergency clips fire, window recall 0.968, false-emergency 1.3%.**
+
+**Problems / fixes:**
+- Installing onnx pulled **protobuf 7.x which BREAKS mediapipe** (FieldDescriptor error).
+  Fixed: pin `protobuf==3.20.3` + `onnx==1.14.1` (now in requirements.txt). HPC: respect these
+  pins or extraction dies.
+- User committed the Phase-2 work themselves (`f57f27d fusion`); push deferred by user — deploy
+  branch is local-ahead, sync to HPC via manual pull/copy for now.
+
+**State:** Phases 0–2 complete + Phase 3 export/policy done on WIN-3060. Remaining: T02/T05
+proper numbers need the V3 test scenarios recorded; Jetson-side `pipeline.py` (streaming buffers,
+temporal smoothing/hysteresis, F02 bypass wiring) + on-device latency profile; attention-weight
+interpretability figure; thesis tables from results/fusion_v1/.
+
 ## 2026-07-17 (later) — [WIN-3060] — Phase 2: attention fusion, augmentation, T03 sweep
 
 **Did:**

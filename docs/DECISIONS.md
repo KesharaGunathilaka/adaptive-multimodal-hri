@@ -1,5 +1,14 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-07-20 [WIN-3060]** `protobuf==3.20.3` + `onnx==1.14.1` pinned — newer protobuf breaks
+  mediapipe 0.10.x; pins recorded in requirements.txt for the HPC/Jetson.
+- **2026-07-20 [WIN-3060]** Context/CLIP not exported to ONNX — stays PyTorch on Jetson from the
+  bundled HF cache; only revisit if the latency budget fails.
+- **2026-07-20 [WIN-3060]** Policy thresholds: τ=0.5 (fallback F05/A06), F02 bypass τ=0.30 —
+  gives 22/22 clip-level emergency detection at 1.3% false-emergency on test subjects.
+- **2026-07-20 [WIN-3060]** Deployed fusion keeps ×1 lookbacks (matches unimodal engines'
+  validated buffers) even though ×0.5 scored higher offline — decide after Jetson profiling.
+
 - **2026-07-17 [WIN-3060]** Fusion model selection uses **masked-val early stopping** (mean of
   unmasked + 4 single-masked val accuracies) — plain val selection picked robustness-poor epochs.
 - **2026-07-17 [WIN-3060]** Recombination skips V3 #18 (classroom happy+wave+walk F09): without

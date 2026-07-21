@@ -161,7 +161,7 @@ Rules:
 - Each modality's probability vector → linear projection to d=64 → add learned modality embedding → 4 tokens (+1 CLS token).
 - 1–2 transformer encoder layers (4 heads, d=64, FFN 128, dropout 0.1–0.3).
 - CLS token → linear → 10-class intent softmax.
-- ~100–300K params. Trains in seconds–minutes on the 3060; also fine on CPU.
+- ~100–300K params. Trains in seconds–minutes on the 3060; also fine on CPU. 
 - **Missing modality handling:** a learned `[MISSING]` token replaces any masked modality. At inference, low unimodal confidence or the missing flag triggers masking.
 
 ### 8.2 Training augmentation (applied on-the-fly to the feature table; TRAIN ONLY)
