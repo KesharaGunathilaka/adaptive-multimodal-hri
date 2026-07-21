@@ -1,0 +1,32 @@
+{
+  "created": "2026-07-20 06:57:52",
+  "config": {
+    "missing_mode": "exclude",
+    "dropout_p": 0.3,
+    "jitter_sigma": 0.15,
+    "recombine": true,
+    "select_masked": true,
+    "n_per_row": 400
+  },
+  "chosen_seed": 1,
+  "masked_val_score": 0.8094,
+  "test_clip": {
+    "acc": 0.939,
+    "macro_f1": 0.6435
+  },
+  "features": "features_v1.parquet",
+  "intents": [
+    "F01",
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10"
+  ],
+  "input": "x[24]=emo(7,RAF-DB order)|ges(8)|mot(4)|ctx(5), obs[4] float 1/0",
+  "arch": "AttentionFusion d=64 heads=4 layers=2 ff=128 missing_mode=exclude"
+}
