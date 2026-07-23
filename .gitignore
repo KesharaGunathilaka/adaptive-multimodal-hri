@@ -35,3 +35,6 @@ outputs/
 
 hf_cache/
 onnx/
+# TensorRT build artifacts (device-specific, never commit)
+*.engine
+jetson_deploy/onnx/trt_cache/

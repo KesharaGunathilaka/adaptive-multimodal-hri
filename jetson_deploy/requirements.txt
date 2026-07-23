@@ -9,7 +9,7 @@
 
 #---- FOR OTHER PC ----
 torch
-torchvision
+torchvision 
 
 opencv-python
 pillow

@@ -1,5 +1,33 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-07-20 (later) — [WIN-3060] — TensorRT path for Jetson
+
+**Did:** added the TensorRT acceleration path and documented it end-to-end.
+- `jetson_deploy/fusion/pipeline.py`: new **`--backend tensorrt`** = ONNX Runtime TensorRT
+  Execution Provider (Route A). Reuses the existing `onnx/*.onnx`; JIT-builds + caches FP16
+  engines in `onnx/trt_cache/` on first run. Refactored the 3 backends behind `self.use_ort`.
+  Regression-checked `--backend onnx` still gives S01→F04→A05 after the refactor.
+- `jetson_deploy/fusion/build_engines.sh`: Route B — native `trtexec` → `onnx/*.engine` (FP16,
+  batch=1). `jetson_deploy/fusion/trt_check.py`: verifies each engine's argmax vs ONNX (pycuda+TRT).
+- `jetson_deploy/TENSORRT_GUIDE.md`: full guide — corrects the mental model (see below), Route A
+  vs B, JetPack prereqs, workflow, FP16 accuracy note, troubleshooting table.
+- `.gitignore`: `*.engine` + `trt_cache/` (device-specific build artifacts, never commit/copy).
+
+**Key correction to the plan (user asked "PyTorch→ONNX→TensorRT, correct?"):** correct for the
+4 NETS, but (1) TensorRT does NOT touch the real bottleneck — MediaPipe Holistic (~55 ms/frame)
+is a TFLite graph, stays CPU; the nets it accelerates are already cheap. (2) Engines MUST be
+built ON the Jetson (hardware/version-specific — cannot build on the 3060 and copy). (3) CLIP
+stays PyTorch. Net effect: TensorRT is worth it for headroom + a clean latency table, but the
+pipeline already meets the 300 ms budget without it. Biggest Jetson latency win is Holistic
+`model_complexity=0`, not TensorRT.
+
+**Artifact-sync note:** `jetson_deploy/onnx/*.onnx` are gitignored (same policy as `.pt`/`.pth`).
+Regenerate on the Jetson with `scripts/08_export_onnx.py`, or copy `onnx/` manually. `.engine`
+files are Jetson-only — build there with `build_engines.sh`.
+
+**Next (on the Jetson):** verify `onnxruntime-gpu` has `TensorrtExecutionProvider`; run the
+Route A / Route B workflow in TENSORRT_GUIDE.md §3; profile onnx vs tensorrt and log numbers here.
+
 ## 2026-07-20 (later) — [WIN-3060] — Jetson streaming pipeline + inference guide
 
 **Did:**

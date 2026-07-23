@@ -114,17 +114,10 @@ class HRIPipeline:
         self._mi = _load("jd_motion", mot_dir / "src" / "inference.py",
                          [mot_dir / "src"])
 
-        if backend == "onnx":
-            import onnxruntime as ort
-            prov = (["CUDAExecutionProvider", "CPUExecutionProvider"]
-                    if "CUDAExecutionProvider" in ort.get_available_providers()
-                    else ["CPUExecutionProvider"])
-            odir = ROOT / "onnx"
-            self.emo_sess = ort.InferenceSession(str(odir / "emotion_mobilenetv2.onnx"), providers=prov)
-            self.ges_sess = ort.InferenceSession(str(odir / "gesture_tcn.onnx"), providers=prov)
-            self.mot_sess = ort.InferenceSession(str(odir / "motion_lstm.onnx"), providers=prov)
-            self.fus_sess = ort.InferenceSession(str(odir / "fusion_attn.onnx"), providers=prov)
-            print(f"[init] ONNX providers: {self.emo_sess.get_providers()}")
+        # backends: torch | onnx (CUDA/CPU EP) | tensorrt (TensorRT EP, Jetson)
+        self.use_ort = backend in ("onnx", "tensorrt")
+        if self.use_ort:
+            self._init_ort_sessions(backend)
         else:
             self._init_torch_models(emo_dir, ges_dir, mot_dir)
 
@@ -153,6 +146,48 @@ class HRIPipeline:
         self.candidate_count = 0
         self.timings = Counter()
         self.n_steps = 0
+
+    def _init_ort_sessions(self, backend):
+        """ONNX Runtime sessions. backend='onnx' uses CUDA/CPU; backend=
+        'tensorrt' prepends the TensorRT EP, which JIT-compiles a TensorRT
+        engine on first run and caches it under onnx/trt_cache/ (FP16). The
+        first tensorrt run is SLOW (engine build, minutes) — subsequent runs
+        load the cached engine. This reuses the exact ONNX files; no separate
+        .engine build needed. See ../TENSORRT_GUIDE.md."""
+        import onnxruntime as ort
+        avail = ort.get_available_providers()
+        odir = ROOT / "onnx"
+        if backend == "tensorrt":
+            if "TensorrtExecutionProvider" not in avail:
+                raise SystemExit(
+                    "TensorrtExecutionProvider not available. Install "
+                    "onnxruntime-gpu built with TensorRT on the Jetson, or use "
+                    "--backend onnx. Available: " + ", ".join(avail))
+            cache = odir / "trt_cache"
+            cache.mkdir(exist_ok=True)
+            trt_opts = {
+                "trt_fp16_enable": True,
+                "trt_engine_cache_enable": True,
+                "trt_engine_cache_path": str(cache),
+                "trt_timing_cache_enable": True,
+            }
+            prov = [("TensorrtExecutionProvider", trt_opts),
+                    "CUDAExecutionProvider", "CPUExecutionProvider"]
+        else:
+            prov = (["CUDAExecutionProvider", "CPUExecutionProvider"]
+                    if "CUDAExecutionProvider" in avail else ["CPUExecutionProvider"])
+
+        def mk(name):
+            return ort.InferenceSession(str(odir / name), providers=prov)
+
+        self.emo_sess = mk("emotion_mobilenetv2.onnx")
+        self.ges_sess = mk("gesture_tcn.onnx")
+        self.mot_sess = mk("motion_lstm.onnx")
+        self.fus_sess = mk("fusion_attn.onnx")
+        print(f"[init] ORT providers: {self.emo_sess.get_providers()}")
+        if backend == "tensorrt":
+            print("[init] first TensorRT run builds+caches engines (minutes); "
+                  "later runs load from onnx/trt_cache/")
 
     def _init_torch_models(self, emo_dir, ges_dir, mot_dir):
         torch = self.torch
@@ -234,7 +269,7 @@ class HRIPipeline:
             return None
         sel = np.array(idx)[uniform_indices(len(idx), GES_WINDOW)]
         seq = np.stack([self.buf[i][1] for i in sel])[None].astype(np.float32)
-        if self.backend == "onnx":
+        if self.use_ort:
             out = self.ges_sess.run(None, {self.ges_sess.get_inputs()[0].name: seq})[0]
             return _softmax(out[0])
         with self.torch.no_grad():
@@ -252,7 +287,7 @@ class HRIPipeline:
                         for j in joints])
         vel = np.vstack([np.zeros((1, 42), np.float32), np.diff(pos, axis=0)])
         seq = np.concatenate([pos, vel], axis=1)[None].astype(np.float32)
-        if self.backend == "onnx":
+        if self.use_ort:
             out = self.mot_sess.run(None, {self.mot_sess.get_inputs()[0].name: seq})[0]
             return _softmax(out[0])
         with self.torch.no_grad():
@@ -277,7 +312,7 @@ class HRIPipeline:
         batch = self.torch.stack([
             self.emo_tf(Image.fromarray(cv2.cvtColor(c, cv2.COLOR_BGR2RGB)))
             for c in crops])
-        if self.backend == "onnx":
+        if self.use_ort:
             out = self.emo_sess.run(
                 None, {self.emo_sess.get_inputs()[0].name: batch.numpy()})[0]
             return np.stack([_softmax(o) for o in out]).mean(0)
@@ -311,7 +346,7 @@ class HRIPipeline:
                 x[sl] = p
                 obs[k] = 1.0
 
-        if self.backend == "onnx":
+        if self.use_ort:
             names = [i.name for i in self.fus_sess.get_inputs()]
             logits = self.fus_sess.run(None, {names[0]: x[None], names[1]: obs[None]})[0][0]
             probs = _softmax(logits)
@@ -415,7 +450,8 @@ def main():
     ap = argparse.ArgumentParser(description="Streaming HRI fusion pipeline")
     ap.add_argument("--source", default="realsense",
                     help="'realsense', a camera index ('0'), or a video path")
-    ap.add_argument("--backend", choices=("torch", "onnx"), default="torch")
+    ap.add_argument("--backend", choices=("torch", "onnx", "tensorrt"),
+                    default="torch", help="tensorrt = ONNX Runtime TensorRT EP (Jetson)")
     ap.add_argument("--display", dest="display", action="store_true", default=True)
     ap.add_argument("--no-display", dest="display", action="store_false")
     ap.add_argument("--json", default=None, help="append results as JSONL")
