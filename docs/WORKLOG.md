@@ -1,5 +1,26 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-07-24 — [WIN-3060] — Methodology docs + regenerated gesture report
+
+**Did:**
+- Started `docs/methodology/` (narrative, thesis-facing): README (overview+pipeline),
+  `01_data_and_labels.md`, `02_unimodal_models.md`. Stage-by-stage; more to come.
+- **Regenerated the stale gesture real-world report.** The old
+  `modalities/gesture/reports/evaluation/TCN/REALWORLD_REPORT.md` was from a pre-both-hands-up
+  checkpoint (showed both_hands_up AND point as untrained → 0%). New script
+  `scripts/12_regen_gesture_realworld.py` reruns the DEPLOYED `best_TCN.pth` over the curated
+  clips via the per-frame caches (offline whole-clip resample). Old report preserved as
+  `REALWORLD_REPORT_pre_bhu.md`.
+- Verified all deployed checkpoints against `checkpoint_manifest.sha256` — all 7 OK.
+
+**Regenerated gesture numbers (deployed best_TCN.pth, curated data, offline):**
+overall **76.8% acc / 77.7% macro-F1**. both_hands_up now recognized (S05 100%, S09 98%,
+S19 83%, S24 85%, S26 84%). Still weak: `point` in classroom (S03 0%, S22 5%) though S29
+kitchen recovered to 78%; `wave` weak (S02 62%, S25 25% → raise_hand). Confirms the earlier
+finding that the pre_bhu report was stale.
+
+**Next:** per-model deep-dive discussion with user, then methodology Stage 3 (feature extraction).
+
 ## 2026-07-20 (later) — [WIN-3060] — TensorRT path for Jetson
 
 **Did:** added the TensorRT acceleration path and documented it end-to-end.

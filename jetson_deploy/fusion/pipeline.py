@@ -421,24 +421,35 @@ def _one_hot_like(probs, intent):
 
 
 # ── sources ──────────────────────────────────────────────────────────────
-def open_source(source):
+def open_source(source, camera_fallback=0):
+    """'realsense' tries the RealSense pipeline first and falls back to
+    cv2.VideoCapture(camera_fallback) if no device is attached / the SDK
+    isn't installed. Any other value is opened directly (index or path)."""
     if source == "realsense":
-        import pyrealsense2 as rs
-        pipe = rs.pipeline()
-        cfg = rs.config()
-        cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-        pipe.start(cfg)
+        try:
+            import pyrealsense2 as rs
+            pipe = rs.pipeline()
+            cfg = rs.config()
+            cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+            pipe.start(cfg)
 
-        def read():
-            frames = pipe.wait_for_frames()
-            c = frames.get_color_frame()
-            if not c:
-                return None
-            return np.asanyarray(c.get_data())
-        return read, pipe.stop
+            def read():
+                frames = pipe.wait_for_frames()
+                c = frames.get_color_frame()
+                if not c:
+                    return None
+                return np.asanyarray(c.get_data())
+            print("[source] RealSense camera connected.")
+            return read, pipe.stop
+        except Exception as e:
+            print(f"[source] RealSense unavailable ({e}); "
+                  f"falling back to webcam index {camera_fallback}.")
+            source = camera_fallback
+
     cap = cv2.VideoCapture(int(source) if str(source).isdigit() else str(source))
     if not cap.isOpened():
         raise SystemExit(f"cannot open source: {source}")
+    print(f"[source] opened {source}")
 
     def read():
         ok, f = cap.read()
@@ -450,6 +461,8 @@ def main():
     ap = argparse.ArgumentParser(description="Streaming HRI fusion pipeline")
     ap.add_argument("--source", default="realsense",
                     help="'realsense', a camera index ('0'), or a video path")
+    ap.add_argument("--camera", type=int, default=0,
+                    help="Webcam index used if --source realsense finds no device.")
     ap.add_argument("--backend", choices=("torch", "onnx", "tensorrt"),
                     default="torch", help="tensorrt = ONNX Runtime TensorRT EP (Jetson)")
     ap.add_argument("--display", dest="display", action="store_true", default=True)
@@ -462,7 +475,7 @@ def main():
 
     pipe = HRIPipeline(backend=args.backend, tau=args.tau,
                        tau_emergency=args.tau_emergency)
-    read, close = open_source(args.source)
+    read, close = open_source(args.source, camera_fallback=args.camera)
     jf = open(args.json, "a", encoding="utf-8") if args.json else None
 
     t_start = time.time()
