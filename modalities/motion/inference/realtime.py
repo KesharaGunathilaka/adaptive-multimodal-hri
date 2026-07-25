@@ -14,6 +14,7 @@ Usage:
     python inference/realtime.py
 """
 
+import argparse
 import os
 import sys
 import cv2
@@ -21,6 +22,12 @@ import numpy as np
 import mediapipe as mp
 import time
 from collections import deque
+
+try:
+    import pyrealsense2 as rs
+    _RS_AVAILABLE = True
+except ImportError:
+    _RS_AVAILABLE = False
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 THIS_DIR     = os.path.dirname(os.path.abspath(__file__))
@@ -97,6 +104,19 @@ def draw_prob_bars(frame, probs, current_label, x=10, y=200):
                     bold, 0.38, (220, 220, 220), 1, cv2.LINE_AA)
 
 
+def _try_start_realsense():
+    if not _RS_AVAILABLE:
+        return None, None
+    try:
+        pipeline = rs.pipeline()
+        cfg = rs.config()
+        cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        pipeline.start(cfg)
+        return pipeline, rs.align(rs.stream.color)
+    except Exception:
+        return None, None
+
+
 def draw_fps(frame, fps):
     cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
@@ -130,6 +150,10 @@ def draw_prediction(frame, result, h, w):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--camera", type=int, default=0, help="Webcam fallback index.")
+    args = parser.parse_args()
+
     # ── Load inference engine ─────────────────────────────────────────────────
     print("Loading model...")
     engine = MotionInference(CKPT)
@@ -144,17 +168,22 @@ def main():
         static_image_mode=False,
     )
 
-    # ── Webcam ────────────────────────────────────────────────────────────────
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("ERROR: Cannot open webcam. Try changing VideoCapture(0) to (1).")
-        sys.exit(1)
+    # ── Camera: RealSense preferred, webcam fallback ─────────────────────────
+    pipeline, align = _try_start_realsense()
+    cap = None
+    if pipeline is not None:
+        print("RealSense camera connected.")
+    else:
+        print(f"RealSense not available — falling back to webcam (index {args.camera}).")
+        cap = cv2.VideoCapture(args.camera)
+        if not cap.isOpened():
+            print("ERROR: Cannot open webcam. Try a different --camera index.")
+            sys.exit(1)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS,          30)
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv2.CAP_PROP_FPS,          30)
-
-    print("\nWebcam demo running.")
+    print("\nDemo running.")
     print("Controls:  Q/ESC = quit   |   R = reset buffer   |   S = screenshot\n")
 
     # FPS tracking
@@ -163,10 +192,17 @@ def main():
     frame_idx  = 0
 
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Frame read failed.")
-            break
+        if pipeline is not None:
+            frames = align.process(pipeline.wait_for_frames())
+            color_frame = frames.get_color_frame()
+            if not color_frame:
+                continue
+            frame = np.asarray(color_frame.get_data())
+        else:
+            ret, frame = cap.read()
+            if not ret:
+                print("Frame read failed.")
+                break
 
         frame_idx += 1
         h, w = frame.shape[:2]
@@ -262,7 +298,10 @@ def main():
             cv2.imwrite(fname, frame)
             print(f"Saved: {fname}")
 
-    cap.release()
+    if pipeline is not None:
+        pipeline.stop()
+    else:
+        cap.release()
     cv2.destroyAllWindows()
     pose.close()
     print("Done.")
