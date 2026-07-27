@@ -314,3 +314,49 @@ due this week (handover §9).
   into `videos/struct/` with annotations incl. `splits.csv` (scenario/subject/leaky-random splits).
   Known incident 2026-07-13: kitchen clips were 0-byte after a copy; re-copied (0 zero-byte files now).
 - **Jetson:** `jetson_deploy/` inference-only package built 2026-07-16, all 4 models load-verified.
+
+---
+
+## 2026-07-27 — [WIN-3060] — Unimodal + fusion audit on the complete classroom set (`data/final`)
+
+**Ran:** `15_final_extract.py` (866 RealSense classroom clips, 90.5 min, 0 failures) →
+`16_final_unimodal_eval.py` (12,203 windows) → `17_cue_ambiguity.py` → `19_final_fusion_eval.py`.
+Phone views (572 clips) extracting after.
+
+**New code:** `scripts/15_final_extract.py`, `16_final_unimodal_eval.py`, `17_cue_ambiguity.py`,
+`18_final_subjects.py`, `19_final_fusion_eval.py`, `scripts/realworld_eval/final_unimodal.py`.
+`fusion/extraction/perframe.py` now caches `pose_img`. `14_final_annotations.py` path fixed to
+`data/old/labels.csv` after the data reorg.
+
+**Headline (held-out `raw_take_20260725` clips, clip-level):** context 1.000 · gesture 0.766 ·
+emotion 0.643 · motion 0.637. Training-overlap clips read 1.000 / 0.882 / 0.969 / 0.920 — the
+emotion and motion figures were inflated by fine-tune overlap.
+
+**Deployed fusion head, frozen, on this data:** train-design rows 0.887 (ceiling 0.977),
+**test-design rows 0.388 (ceiling 0.900)**. Every failing row is a 2026-07-25 row; every
+`curated_clip` row is ≥0.778. Cause is that fusion v1 never saw 18 of the 29 recorded classroom
+rows, not a defect in the fusion design — under masking it sits at the table ceiling.
+
+**Two findings that change the plan:**
+1. **The V3 table itself caps classroom test accuracy at 0.900** — rows #22 (F01) and #30 (F09)
+   are the identical cue tuple and differ only by walking direction. Confirmed empirically: row #1
+   scores 1.000 and row #18 (its train-side twin) scores 0.000.
+2. **The designed-missing rows are not missing at the sensor** — emotion observed on 99.7% of
+   windows for rows #22/#25/#30, gesture on 100% for #12/#23. T03 currently measures simulated
+   masking, and the deployed runtime would not mask these rows at all (detector succeeds).
+
+**State / artifacts:** `results/realworld_eval_final/{ASSESSMENT.md,unimodal/,ambiguity/,fusion_transfer/}`,
+`data/final/features/{perframe/,unimodal_windows.parquet}` (gitignored),
+`data/final/annotations/{derived_rows.csv,subjects_pending.csv}`, `docs/methodology/04_missing_cues.md`.
+
+**Next:** retrain fusion on `data/final` (biggest single gain), then emotion fine-tune targeting
+Fear/Disgust/Sad, then motion fine-tune for `stepping_back`/`standing`. Blocked on user:
+`subjects_pending.csv` person_ids (316 takes), `dilanka/` folder split, direction-cue go/no-go.
+
+**Update (same day, +3.5 h):** phone-view extraction finished — 572 clips in 211.8 min, 0 failures;
+all 1,440 classroom clips cached (217 MB). Per-view scoring on the **same synchronised takes**
+shows a 36× pixel increase buys nothing: emotion 0.643/0.683/0.674 and motion 0.637/0.526/0.617
+for RealSense-480p / phone-1080p / phone-4K. Motion is *worse* on the higher-resolution phones,
+which a skeleton classifier cannot blame on resolution — supports the camera-framing hypothesis.
+Conclusion: the weakness is not the sensor, so fine-tuning (not a camera upgrade) is the lever.
+See `ASSESSMENT.md` §4b.

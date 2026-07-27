@@ -33,3 +33,27 @@
   `docs/checkpoint_manifest.sha256` + WORKLOG entries; git carries hashes, binaries copied manually.
 - **2026-07-16 [WIN-3060]** Fusion consumes the CLIP zero-shot scene classifier only (5-dim); the
   SmolVLM2 caption path is out of scope for the fusion cue vector.
+- **2026-07-27 [WIN-3060]** V3 #6 derived from #5 (mask context) and #9 from #8 (mask gesture)
+  rather than recorded: the rows differ only by a *sensor state*, which no video can depict.
+  Spec in `data/final/annotations/derived_rows.csv`; train-design rows only, splits follow the
+  source clip, never scored. Rationale + the four rules in `docs/methodology/04_missing_cues.md`.
+- **2026-07-27 [WIN-3060]** Designed-missingness is read from **both** the V3 cue column
+  (`[missing]`) and the V3 `Missing` column. Context can only express it the second way (#6/#24/#56
+  name a real room while Missing says `context`), so cue-column-only parsing silently left the
+  context token observed on those rows. Fixed in `scripts/realworld_eval/final_unimodal.py`.
+- **2026-07-27 [WIN-3060]** `fusion/extraction/perframe.py` now also caches `pose_img` [T,33,4],
+  the raw image-space MediaPipe pose. `gesture_feats` divides out the mid-shoulder centre and the
+  shoulder-width scale, so approach/recede is unrecoverable from it; caching the raw landmarks
+  keeps a direction cue possible without re-decoding 1,440 videos. Backward compatible (old npz
+  simply lack the key).
+- **2026-07-27 [WIN-3060]** Unimodal accuracy on `data/final` is reported split by `source`:
+  `curated_clip` clips were migrated from `data/old` and the emotion/motion models were fine-tuned
+  on them, so only `raw_take_20260725` is a generalisation estimate (emotion 0.969 → 0.643,
+  motion 0.920 → 0.637). Pooling the two overstates both models.
+- **2026-07-27 [WIN-3060] (user)** Direction cue: decision deferred until unimodal results were in
+  (they now are — see `results/realworld_eval_final/ASSESSMENT.md` §3.5, still open).
+- **2026-07-27 [WIN-3060] (user)** All three camera views to be extracted for classroom; RealSense
+  480p remains the deployment view and carries the headline numbers.
+- **2026-07-27 [WIN-3060]** Camera resolution ruled out as a cause of the unimodal weakness: the
+  three synchronised views of the same takes agree within ±0.06 accuracy (emotion, motion), and
+  motion is *worse* at 1080p than at 480p. Deployment stays on the RealSense 640×480 view.
