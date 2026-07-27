@@ -29,7 +29,8 @@ from scripts.realworld_eval.final_common import (  # noqa: E402
     ANNOT_DIR, CLIPS_CSV, CLIPS_ROOT, SCENARIOS_CSV, VIDEO_EXT,
     _CURATED_RE, _SCENARIO_RE, classify_view, parse_v3_table, probe)
 
-OLD_LABELS = ROOT / "data" / "labels.csv"
+# the pre-2026-07-25 root moved to data/old when data/final was created
+OLD_LABELS = ROOT / "data" / "old" / "labels.csv"
 
 
 def verify_folder_numbering(v3: pd.DataFrame) -> None:
@@ -103,7 +104,9 @@ def build_inventory(v3: pd.DataFrame) -> pd.DataFrame:
             r = v3i.loc[v3_row]
             rec.update({
                 "intent": r.intent, "split_design": r.split_design,
-                "emotion_v3": r.emotion_v3, "gt_emotion": r.gt_emotion,
+                "emotion_v3": r.emotion_v3,
+                # pandas hands back NaN, not None, for the masked rows
+                "gt_emotion": None if pd.isna(r.gt_emotion) else r.gt_emotion,
                 "emotion_masked": bool(r.emotion_masked),
                 "gesture_v3": r.gesture_v3, "motion_v3": r.motion_v3,
                 "scenario_desc": r.scenario_desc,
