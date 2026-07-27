@@ -1,0 +1,319 @@
+{
+  "emotion": {
+    "designed_missing": {
+      "n_clips": 144,
+      "n_windows": 2047,
+      "observation_rate": 0.999,
+      "per_scenario": {
+        "S22_F01": 1.0,
+        "S25_F04": 1.0,
+        "S30_F09": 0.997
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 1.0,
+      "clips_never_observed": 0,
+      "per_view": {
+        "phone_1080p": 1.0,
+        "phone_4k": 1.0,
+        "realsense_480p": 1.0
+      }
+    },
+    "window": {
+      "n": 18136,
+      "acc": 0.7676,
+      "macro_f1": 0.6906,
+      "n_classes": 7
+    },
+    "clip": {
+      "n": 1296,
+      "acc": 0.8017,
+      "macro_f1": 0.7173,
+      "n_classes": 7
+    },
+    "by_view": {
+      "phone_1080p": {
+        "n": 237,
+        "acc": 0.6835,
+        "macro_f1": 0.527,
+        "n_classes": 6
+      },
+      "phone_4k": {
+        "n": 239,
+        "acc": 0.6736,
+        "macro_f1": 0.4815,
+        "n_classes": 6
+      },
+      "realsense_480p": {
+        "n": 820,
+        "acc": 0.8732,
+        "macro_f1": 0.7926,
+        "n_classes": 7
+      }
+    },
+    "by_split_design": {
+      "test": {
+        "n": 331,
+        "acc": 0.7009,
+        "macro_f1": 0.4359,
+        "n_classes": 5
+      },
+      "train": {
+        "n": 965,
+        "acc": 0.8363,
+        "macro_f1": 0.775,
+        "n_classes": 7
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 579,
+        "acc": 0.9689,
+        "macro_f1": 0.9578,
+        "n_classes": 6
+      },
+      "raw_take_20260725": {
+        "n": 717,
+        "acc": 0.6667,
+        "macro_f1": 0.5157,
+        "n_classes": 6
+      }
+    }
+  },
+  "gesture": {
+    "designed_missing": {
+      "n_clips": 94,
+      "n_windows": 1279,
+      "observation_rate": 1.0,
+      "per_scenario": {
+        "S12_F06": 1.0,
+        "S23_F02": 1.0
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 0.999,
+      "clips_never_observed": 1,
+      "per_view": {
+        "phone_1080p": 1.0,
+        "phone_4k": 1.0,
+        "realsense_480p": 0.998
+      }
+    },
+    "window": {
+      "n": 18888,
+      "acc": 0.7887,
+      "macro_f1": 0.7913,
+      "n_classes": 8
+    },
+    "clip": {
+      "n": 1345,
+      "acc": 0.797,
+      "macro_f1": 0.7998,
+      "n_classes": 8
+    },
+    "by_view": {
+      "phone_1080p": {
+        "n": 273,
+        "acc": 0.7179,
+        "macro_f1": 0.75,
+        "n_classes": 8
+      },
+      "phone_4k": {
+        "n": 275,
+        "acc": 0.7455,
+        "macro_f1": 0.7472,
+        "n_classes": 8
+      },
+      "realsense_480p": {
+        "n": 797,
+        "acc": 0.8419,
+        "macro_f1": 0.8163,
+        "n_classes": 8
+      }
+    },
+    "by_split_design": {
+      "test": {
+        "n": 435,
+        "acc": 0.7057,
+        "macro_f1": 0.6208,
+        "n_classes": 7
+      },
+      "train": {
+        "n": 910,
+        "acc": 0.8407,
+        "macro_f1": 0.7333,
+        "n_classes": 7
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 524,
+        "acc": 0.8817,
+        "macro_f1": 0.7479,
+        "n_classes": 7
+      },
+      "raw_take_20260725": {
+        "n": 821,
+        "acc": 0.743,
+        "macro_f1": 0.738,
+        "n_classes": 8
+      }
+    }
+  },
+  "motion": {
+    "designed_missing": {
+      "n_clips": 0,
+      "n_windows": 0,
+      "observation_rate": null,
+      "per_scenario": {}
+    },
+    "coverage": {
+      "window_observation_rate": 0.999,
+      "clips_never_observed": 1,
+      "per_view": {
+        "phone_1080p": 1.0,
+        "phone_4k": 1.0,
+        "realsense_480p": 0.998
+      }
+    },
+    "window": {
+      "n": 20162,
+      "acc": 0.72,
+      "macro_f1": 0.632,
+      "n_classes": 4
+    },
+    "clip": {
+      "n": 1439,
+      "acc": 0.7248,
+      "macro_f1": 0.6387,
+      "n_classes": 4
+    },
+    "by_view": {
+      "phone_1080p": {
+        "n": 285,
+        "acc": 0.5263,
+        "macro_f1": 0.3959,
+        "n_classes": 4
+      },
+      "phone_4k": {
+        "n": 287,
+        "acc": 0.6167,
+        "macro_f1": 0.4213,
+        "n_classes": 4
+      },
+      "realsense_480p": {
+        "n": 867,
+        "acc": 0.8258,
+        "macro_f1": 0.7677,
+        "n_classes": 4
+      }
+    },
+    "by_split_design": {
+      "test": {
+        "n": 475,
+        "acc": 0.6295,
+        "macro_f1": 0.4326,
+        "n_classes": 4
+      },
+      "train": {
+        "n": 964,
+        "acc": 0.7718,
+        "macro_f1": 0.6973,
+        "n_classes": 4
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 578,
+        "acc": 0.9204,
+        "macro_f1": 0.8792,
+        "n_classes": 4
+      },
+      "raw_take_20260725": {
+        "n": 861,
+        "acc": 0.5935,
+        "macro_f1": 0.4231,
+        "n_classes": 4
+      }
+    }
+  },
+  "context": {
+    "designed_missing": {
+      "n_clips": 49,
+      "n_windows": 693,
+      "observation_rate": 1.0,
+      "per_scenario": {
+        "S24_F03": 1.0
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 1.0,
+      "clips_never_observed": 0,
+      "per_view": {
+        "phone_1080p": 1.0,
+        "phone_4k": 1.0,
+        "realsense_480p": 1.0
+      }
+    },
+    "window": {
+      "n": 19492,
+      "acc": 0.9984,
+      "macro_f1": 0.4996,
+      "n_classes": 1
+    },
+    "clip": {
+      "n": 1391,
+      "acc": 0.9993,
+      "macro_f1": 0.4998,
+      "n_classes": 1
+    },
+    "by_view": {
+      "phone_1080p": {
+        "n": 269,
+        "acc": 0.9963,
+        "macro_f1": 0.4991,
+        "n_classes": 1
+      },
+      "phone_4k": {
+        "n": 270,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "realsense_480p": {
+        "n": 852,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      }
+    },
+    "by_split_design": {
+      "test": {
+        "n": 426,
+        "acc": 0.9977,
+        "macro_f1": 0.4994,
+        "n_classes": 1
+      },
+      "train": {
+        "n": 965,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 579,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260725": {
+        "n": 812,
+        "acc": 0.9988,
+        "macro_f1": 0.4997,
+        "n_classes": 1
+      }
+    }
+  }
+}

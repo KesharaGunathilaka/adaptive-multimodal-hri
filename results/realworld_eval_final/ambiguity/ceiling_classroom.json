@@ -1,0 +1,2051 @@
+{
+  "generated": "2026-07-27 03:37",
+  "context": "classroom",
+  "view": "realsense_480p",
+  "designed_all_rows": {
+    "n_rows": 31,
+    "n_clips": 31,
+    "conditions": {
+      "none": {
+        "ceiling": 0.9355,
+        "clips_unreachable": 2
+      },
+      "context": {
+        "ceiling": 0.9355,
+        "clips_unreachable": 2
+      },
+      "emotion": {
+        "ceiling": 0.6774,
+        "clips_unreachable": 10
+      },
+      "gesture": {
+        "ceiling": 0.6774,
+        "clips_unreachable": 10
+      },
+      "motion": {
+        "ceiling": 0.9355,
+        "clips_unreachable": 2
+      },
+      "context+emotion": {
+        "ceiling": 0.6774,
+        "clips_unreachable": 10
+      },
+      "context+gesture": {
+        "ceiling": 0.6774,
+        "clips_unreachable": 10
+      },
+      "context+motion": {
+        "ceiling": 0.9355,
+        "clips_unreachable": 2
+      },
+      "emotion+gesture": {
+        "ceiling": 0.2903,
+        "clips_unreachable": 22
+      },
+      "emotion+motion": {
+        "ceiling": 0.5806,
+        "clips_unreachable": 13
+      },
+      "gesture+motion": {
+        "ceiling": 0.5806,
+        "clips_unreachable": 13
+      }
+    },
+    "ambiguities": {
+      "none": [
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "[missing]",
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "happy",
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "context": [
+        {
+          "cues": {
+            "emotion_v3": "[missing]",
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "happy",
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "emotion": [
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "thumbs down",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            8,
+            15,
+            17
+          ],
+          "intents": {
+            "F04": 1,
+            "F07": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "thumbs up",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            2,
+            28,
+            29
+          ],
+          "intents": {
+            "F01": 1,
+            "F07": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18,
+            19,
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 2,
+            "F09": 3
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "[missing]",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            12,
+            23
+          ],
+          "intents": {
+            "F02": 1,
+            "F06": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "both hands up",
+            "motion_v3": "stand"
+          },
+          "v3_rows": [
+            3,
+            14
+          ],
+          "intents": {
+            "F02": 1,
+            "F07": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "none",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            10,
+            20
+          ],
+          "intents": {
+            "F05": 1,
+            "F10": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "raise hand",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            7,
+            11
+          ],
+          "intents": {
+            "F04": 1,
+            "F05": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "gesture": [
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "neutral",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            5,
+            6,
+            7,
+            10,
+            26
+          ],
+          "intents": {
+            "F03": 2,
+            "F04": 1,
+            "F05": 2
+          },
+          "clips_lost": 3
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "neutral",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            12,
+            19,
+            24
+          ],
+          "intents": {
+            "F03": 1,
+            "F06": 1,
+            "F09": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "[missing]",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "angry",
+            "motion_v3": "stand"
+          },
+          "v3_rows": [
+            13,
+            14
+          ],
+          "intents": {
+            "F06": 1,
+            "F07": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "happy",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            2,
+            11
+          ],
+          "intents": {
+            "F01": 1,
+            "F05": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "happy",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "sad",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            8,
+            9,
+            20
+          ],
+          "intents": {
+            "F04": 2,
+            "F10": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "motion": [
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "[missing]",
+            "gesture_v3": "wave"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "happy",
+            "gesture_v3": "wave"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "context+emotion": [
+        {
+          "cues": {
+            "gesture_v3": "thumbs down",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            8,
+            15,
+            17
+          ],
+          "intents": {
+            "F04": 1,
+            "F07": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "gesture_v3": "thumbs up",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            2,
+            28,
+            29
+          ],
+          "intents": {
+            "F01": 1,
+            "F07": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "gesture_v3": "wave",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18,
+            19,
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 2,
+            "F09": 3
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "gesture_v3": "[missing]",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            12,
+            23
+          ],
+          "intents": {
+            "F02": 1,
+            "F06": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "gesture_v3": "both hands up",
+            "motion_v3": "stand"
+          },
+          "v3_rows": [
+            3,
+            14
+          ],
+          "intents": {
+            "F02": 1,
+            "F07": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "gesture_v3": "none",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            10,
+            20
+          ],
+          "intents": {
+            "F05": 1,
+            "F10": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "gesture_v3": "raise hand",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            7,
+            11
+          ],
+          "intents": {
+            "F04": 1,
+            "F05": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "context+gesture": [
+        {
+          "cues": {
+            "emotion_v3": "neutral",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            5,
+            6,
+            7,
+            10,
+            26
+          ],
+          "intents": {
+            "F03": 2,
+            "F04": 1,
+            "F05": 2
+          },
+          "clips_lost": 3
+        },
+        {
+          "cues": {
+            "emotion_v3": "neutral",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            12,
+            19,
+            24
+          ],
+          "intents": {
+            "F03": 1,
+            "F06": 1,
+            "F09": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "emotion_v3": "[missing]",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "angry",
+            "motion_v3": "stand"
+          },
+          "v3_rows": [
+            13,
+            14
+          ],
+          "intents": {
+            "F06": 1,
+            "F07": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "happy",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            2,
+            11
+          ],
+          "intents": {
+            "F01": 1,
+            "F05": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "happy",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "sad",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            8,
+            9,
+            20
+          ],
+          "intents": {
+            "F04": 2,
+            "F10": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "context+motion": [
+        {
+          "cues": {
+            "emotion_v3": "[missing]",
+            "gesture_v3": "wave"
+          },
+          "v3_rows": [
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "emotion_v3": "happy",
+            "gesture_v3": "wave"
+          },
+          "v3_rows": [
+            1,
+            18
+          ],
+          "intents": {
+            "F01": 1,
+            "F09": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "emotion+gesture": [
+        {
+          "cues": {
+            "context": "classroom",
+            "motion_v3": "sit"
+          },
+          "v3_rows": [
+            2,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            15,
+            17,
+            20,
+            26,
+            28,
+            29
+          ],
+          "intents": {
+            "F01": 1,
+            "F03": 2,
+            "F04": 3,
+            "F05": 3,
+            "F07": 2,
+            "F08": 2,
+            "F10": 1
+          },
+          "clips_lost": 11
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "motion_v3": "walk"
+          },
+          "v3_rows": [
+            1,
+            12,
+            18,
+            19,
+            22,
+            23,
+            24,
+            27,
+            30
+          ],
+          "intents": {
+            "F01": 2,
+            "F02": 1,
+            "F03": 1,
+            "F06": 2,
+            "F09": 3
+          },
+          "clips_lost": 6
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "motion_v3": "stand"
+          },
+          "v3_rows": [
+            3,
+            13,
+            14,
+            21,
+            31
+          ],
+          "intents": {
+            "F02": 1,
+            "F06": 1,
+            "F07": 1,
+            "F10": 2
+          },
+          "clips_lost": 3
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "motion_v3": "step back"
+          },
+          "v3_rows": [
+            4,
+            16,
+            25
+          ],
+          "intents": {
+            "F02": 1,
+            "F04": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        }
+      ],
+      "emotion+motion": [
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "wave"
+          },
+          "v3_rows": [
+            1,
+            13,
+            18,
+            19,
+            22,
+            30
+          ],
+          "intents": {
+            "F01": 2,
+            "F06": 1,
+            "F09": 3
+          },
+          "clips_lost": 3
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "[missing]"
+          },
+          "v3_rows": [
+            9,
+            12,
+            23
+          ],
+          "intents": {
+            "F02": 1,
+            "F04": 1,
+            "F06": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "both hands up"
+          },
+          "v3_rows": [
+            3,
+            4,
+            14,
+            26
+          ],
+          "intents": {
+            "F02": 2,
+            "F05": 1,
+            "F07": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "thumbs down"
+          },
+          "v3_rows": [
+            8,
+            15,
+            16,
+            17
+          ],
+          "intents": {
+            "F04": 1,
+            "F07": 1,
+            "F08": 2
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "thumbs up"
+          },
+          "v3_rows": [
+            2,
+            28,
+            29
+          ],
+          "intents": {
+            "F01": 1,
+            "F07": 1,
+            "F08": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "none"
+          },
+          "v3_rows": [
+            10,
+            20,
+            21,
+            31
+          ],
+          "intents": {
+            "F05": 1,
+            "F10": 3
+          },
+          "clips_lost": 1
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "gesture_v3": "raise hand"
+          },
+          "v3_rows": [
+            7,
+            11,
+            25
+          ],
+          "intents": {
+            "F04": 2,
+            "F05": 1
+          },
+          "clips_lost": 1
+        }
+      ],
+      "gesture+motion": [
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "neutral"
+          },
+          "v3_rows": [
+            5,
+            6,
+            7,
+            10,
+            12,
+            19,
+            24,
+            26
+          ],
+          "intents": {
+            "F03": 3,
+            "F04": 1,
+            "F05": 2,
+            "F06": 1,
+            "F09": 1
+          },
+          "clips_lost": 5
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "[missing]"
+          },
+          "v3_rows": [
+            22,
+            25,
+            30
+          ],
+          "intents": {
+            "F01": 1,
+            "F04": 1,
+            "F09": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "angry"
+          },
+          "v3_rows": [
+            13,
+            14,
+            15,
+            27,
+            28
+          ],
+          "intents": {
+            "F06": 2,
+            "F07": 3
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "happy"
+          },
+          "v3_rows": [
+            1,
+            2,
+            11,
+            18
+          ],
+          "intents": {
+            "F01": 2,
+            "F05": 1,
+            "F09": 1
+          },
+          "clips_lost": 2
+        },
+        {
+          "cues": {
+            "context": "classroom",
+            "emotion_v3": "sad"
+          },
+          "v3_rows": [
+            8,
+            9,
+            20,
+            21,
+            31
+          ],
+          "intents": {
+            "F04": 2,
+            "F10": 3
+          },
+          "clips_lost": 2
+        }
+      ]
+    }
+  },
+  "recorded": {
+    "test": {
+      "n_rows": 10,
+      "n_clips": 160,
+      "conditions": {
+        "none": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "context": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "emotion": {
+          "ceiling": 0.8,
+          "clips_unreachable": 32
+        },
+        "gesture": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "motion": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "context+emotion": {
+          "ceiling": 0.8,
+          "clips_unreachable": 32
+        },
+        "context+gesture": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "context+motion": {
+          "ceiling": 0.9,
+          "clips_unreachable": 16
+        },
+        "emotion+gesture": {
+          "ceiling": 0.4,
+          "clips_unreachable": 96
+        },
+        "emotion+motion": {
+          "ceiling": 0.8,
+          "clips_unreachable": 32
+        },
+        "gesture+motion": {
+          "ceiling": 0.6,
+          "clips_unreachable": 64
+        }
+      },
+      "ambiguities": {
+        "none": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "[missing]",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context": [
+          {
+            "cues": {
+              "emotion_v3": "[missing]",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "emotion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "thumbs up",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              28,
+              29
+            ],
+            "intents": {
+              "F07": 16,
+              "F08": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "gesture": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "[missing]",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "[missing]",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+emotion": [
+          {
+            "cues": {
+              "gesture_v3": "thumbs up",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              28,
+              29
+            ],
+            "intents": {
+              "F07": 16,
+              "F08": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+gesture": [
+          {
+            "cues": {
+              "emotion_v3": "[missing]",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+motion": [
+          {
+            "cues": {
+              "emotion_v3": "[missing]",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "emotion+gesture": [
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              22,
+              23,
+              24,
+              27,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F02": 16,
+              "F03": 16,
+              "F06": 16,
+              "F09": 16
+            },
+            "clips_lost": 64
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              26,
+              28,
+              29
+            ],
+            "intents": {
+              "F05": 16,
+              "F07": 16,
+              "F08": 16
+            },
+            "clips_lost": 32
+          }
+        ],
+        "emotion+motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "thumbs up"
+            },
+            "v3_rows": [
+              28,
+              29
+            ],
+            "intents": {
+              "F07": 16,
+              "F08": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              22,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "gesture+motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "[missing]"
+            },
+            "v3_rows": [
+              22,
+              25,
+              30
+            ],
+            "intents": {
+              "F01": 16,
+              "F04": 16,
+              "F09": 16
+            },
+            "clips_lost": 32
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "angry"
+            },
+            "v3_rows": [
+              27,
+              28
+            ],
+            "intents": {
+              "F06": 16,
+              "F07": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "neutral"
+            },
+            "v3_rows": [
+              24,
+              26
+            ],
+            "intents": {
+              "F03": 16,
+              "F05": 16
+            },
+            "clips_lost": 16
+          }
+        ]
+      }
+    },
+    "train": {
+      "n_rows": 19,
+      "n_clips": 708,
+      "conditions": {
+        "none": {
+          "ceiling": 0.9774,
+          "clips_unreachable": 16
+        },
+        "context": {
+          "ceiling": 0.9774,
+          "clips_unreachable": 16
+        },
+        "emotion": {
+          "ceiling": 0.7528,
+          "clips_unreachable": 175
+        },
+        "gesture": {
+          "ceiling": 0.6907,
+          "clips_unreachable": 219
+        },
+        "motion": {
+          "ceiling": 0.9774,
+          "clips_unreachable": 16
+        },
+        "context+emotion": {
+          "ceiling": 0.7528,
+          "clips_unreachable": 175
+        },
+        "context+gesture": {
+          "ceiling": 0.6907,
+          "clips_unreachable": 219
+        },
+        "context+motion": {
+          "ceiling": 0.9774,
+          "clips_unreachable": 16
+        },
+        "emotion+gesture": {
+          "ceiling": 0.4068,
+          "clips_unreachable": 420
+        },
+        "emotion+motion": {
+          "ceiling": 0.6342,
+          "clips_unreachable": 259
+        },
+        "gesture+motion": {
+          "ceiling": 0.5918,
+          "clips_unreachable": 289
+        }
+      },
+      "ambiguities": {
+        "none": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "happy",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context": [
+          {
+            "cues": {
+              "emotion_v3": "happy",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "emotion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "raise hand",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              7,
+              11
+            ],
+            "intents": {
+              "F04": 70,
+              "F05": 54
+            },
+            "clips_lost": 54
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "both hands up",
+              "motion_v3": "stand"
+            },
+            "v3_rows": [
+              3,
+              14
+            ],
+            "intents": {
+              "F02": 40,
+              "F07": 48
+            },
+            "clips_lost": 40
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "thumbs down",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              8,
+              15,
+              17
+            ],
+            "intents": {
+              "F04": 61,
+              "F07": 16,
+              "F08": 17
+            },
+            "clips_lost": 33
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18,
+              19
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 32
+            },
+            "clips_lost": 32
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "none",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              10,
+              20
+            ],
+            "intents": {
+              "F05": 42,
+              "F10": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "gesture": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "neutral",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              5,
+              7,
+              10
+            ],
+            "intents": {
+              "F03": 59,
+              "F04": 70,
+              "F05": 42
+            },
+            "clips_lost": 101
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "happy",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              2,
+              11
+            ],
+            "intents": {
+              "F01": 54,
+              "F05": 54
+            },
+            "clips_lost": 54
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "angry",
+              "motion_v3": "stand"
+            },
+            "v3_rows": [
+              13,
+              14
+            ],
+            "intents": {
+              "F06": 16,
+              "F07": 48
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "happy",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "neutral",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              12,
+              19
+            ],
+            "intents": {
+              "F06": 54,
+              "F09": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "sad",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              8,
+              20
+            ],
+            "intents": {
+              "F04": 61,
+              "F10": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "happy",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+emotion": [
+          {
+            "cues": {
+              "gesture_v3": "raise hand",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              7,
+              11
+            ],
+            "intents": {
+              "F04": 70,
+              "F05": 54
+            },
+            "clips_lost": 54
+          },
+          {
+            "cues": {
+              "gesture_v3": "both hands up",
+              "motion_v3": "stand"
+            },
+            "v3_rows": [
+              3,
+              14
+            ],
+            "intents": {
+              "F02": 40,
+              "F07": 48
+            },
+            "clips_lost": 40
+          },
+          {
+            "cues": {
+              "gesture_v3": "thumbs down",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              8,
+              15,
+              17
+            ],
+            "intents": {
+              "F04": 61,
+              "F07": 16,
+              "F08": 17
+            },
+            "clips_lost": 33
+          },
+          {
+            "cues": {
+              "gesture_v3": "wave",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18,
+              19
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 32
+            },
+            "clips_lost": 32
+          },
+          {
+            "cues": {
+              "gesture_v3": "none",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              10,
+              20
+            ],
+            "intents": {
+              "F05": 42,
+              "F10": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+gesture": [
+          {
+            "cues": {
+              "emotion_v3": "neutral",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              5,
+              7,
+              10
+            ],
+            "intents": {
+              "F03": 59,
+              "F04": 70,
+              "F05": 42
+            },
+            "clips_lost": 101
+          },
+          {
+            "cues": {
+              "emotion_v3": "happy",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              2,
+              11
+            ],
+            "intents": {
+              "F01": 54,
+              "F05": 54
+            },
+            "clips_lost": 54
+          },
+          {
+            "cues": {
+              "emotion_v3": "angry",
+              "motion_v3": "stand"
+            },
+            "v3_rows": [
+              13,
+              14
+            ],
+            "intents": {
+              "F06": 16,
+              "F07": 48
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "emotion_v3": "happy",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "emotion_v3": "neutral",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              12,
+              19
+            ],
+            "intents": {
+              "F06": 54,
+              "F09": 16
+            },
+            "clips_lost": 16
+          },
+          {
+            "cues": {
+              "emotion_v3": "sad",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              8,
+              20
+            ],
+            "intents": {
+              "F04": 61,
+              "F10": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "context+motion": [
+          {
+            "cues": {
+              "emotion_v3": "happy",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              1,
+              18
+            ],
+            "intents": {
+              "F01": 42,
+              "F09": 16
+            },
+            "clips_lost": 16
+          }
+        ],
+        "emotion+gesture": [
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "sit"
+            },
+            "v3_rows": [
+              2,
+              5,
+              7,
+              8,
+              10,
+              11,
+              15,
+              17,
+              20
+            ],
+            "intents": {
+              "F01": 54,
+              "F03": 59,
+              "F04": 131,
+              "F05": 96,
+              "F07": 16,
+              "F08": 17,
+              "F10": 16
+            },
+            "clips_lost": 258
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "walk"
+            },
+            "v3_rows": [
+              1,
+              12,
+              18,
+              19
+            ],
+            "intents": {
+              "F01": 42,
+              "F06": 54,
+              "F09": 32
+            },
+            "clips_lost": 74
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "stand"
+            },
+            "v3_rows": [
+              3,
+              13,
+              14,
+              21
+            ],
+            "intents": {
+              "F02": 40,
+              "F06": 16,
+              "F07": 48,
+              "F10": 16
+            },
+            "clips_lost": 72
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "motion_v3": "step back"
+            },
+            "v3_rows": [
+              4,
+              16
+            ],
+            "intents": {
+              "F02": 16,
+              "F08": 55
+            },
+            "clips_lost": 16
+          }
+        ],
+        "emotion+motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "thumbs down"
+            },
+            "v3_rows": [
+              8,
+              15,
+              16,
+              17
+            ],
+            "intents": {
+              "F04": 61,
+              "F07": 16,
+              "F08": 72
+            },
+            "clips_lost": 77
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "raise hand"
+            },
+            "v3_rows": [
+              7,
+              11
+            ],
+            "intents": {
+              "F04": 70,
+              "F05": 54
+            },
+            "clips_lost": 54
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "both hands up"
+            },
+            "v3_rows": [
+              3,
+              4,
+              14
+            ],
+            "intents": {
+              "F02": 56,
+              "F07": 48
+            },
+            "clips_lost": 48
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "wave"
+            },
+            "v3_rows": [
+              1,
+              13,
+              18,
+              19
+            ],
+            "intents": {
+              "F01": 42,
+              "F06": 16,
+              "F09": 32
+            },
+            "clips_lost": 48
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "gesture_v3": "none"
+            },
+            "v3_rows": [
+              10,
+              20,
+              21
+            ],
+            "intents": {
+              "F05": 42,
+              "F10": 32
+            },
+            "clips_lost": 32
+          }
+        ],
+        "gesture+motion": [
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "neutral"
+            },
+            "v3_rows": [
+              5,
+              7,
+              10,
+              12,
+              19
+            ],
+            "intents": {
+              "F03": 59,
+              "F04": 70,
+              "F05": 42,
+              "F06": 54,
+              "F09": 16
+            },
+            "clips_lost": 171
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "happy"
+            },
+            "v3_rows": [
+              1,
+              2,
+              11,
+              18
+            ],
+            "intents": {
+              "F01": 96,
+              "F05": 54,
+              "F09": 16
+            },
+            "clips_lost": 70
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "sad"
+            },
+            "v3_rows": [
+              8,
+              20,
+              21
+            ],
+            "intents": {
+              "F04": 61,
+              "F10": 32
+            },
+            "clips_lost": 32
+          },
+          {
+            "cues": {
+              "context": "classroom",
+              "emotion_v3": "angry"
+            },
+            "v3_rows": [
+              13,
+              14,
+              15
+            ],
+            "intents": {
+              "F06": 16,
+              "F07": 64
+            },
+            "clips_lost": 16
+          }
+        ]
+      }
+    }
+  }
+}
