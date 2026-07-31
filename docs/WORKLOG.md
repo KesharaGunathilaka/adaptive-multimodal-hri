@@ -1,5 +1,100 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-07-31 — [WIN-3060] — `data/final_merged` audited + annotated
+
+**Did:** audited the new collection root (`data/final dataset merged`, renamed to
+`data/final_merged`) and the new table (`docs/final_dataset_merged.docx`) against
+`data/final` / `docs/Final_Dataset.docx`, then built its annotation tables.
+
+**The root is a reorganisation, not new footage.** SHA-256 of all 2,905 files: every one
+already existed under `data/final` — 0 new bytes. Deltas: `+S06_F03`, `+S09_F04` (physical
+copies of S05/S08, with `.txt` notes saying so), `S18/S19_F09 → _F01`, `−S30_F09` (48 clips),
+`−classroom/dilanka` (36 of 60 folded 4-at-a-time into the S22–S31 test folders, 24 dropped).
+Everything was renamed to `S{row}_F{intent}_c{NNN}`, which destroyed the only record of each
+clip's session and `data/old` identity; both are recovered here by hash, not filename.
+
+**The table change is the important one: F09 (Farewell) is gone.** Rows #18/#19/#48/#49/#61
+relabelled F09→F01, row #30 blanked, row #63 added. Effect, measured on observable cue tuples:
+**0 collisions across the 62 live rows** (was 4 pairs separable only by walking direction, which
+no model outputs — the thing that capped classroom test accuracy at 0.900 per the 2026-07-27
+audit). The direction cue is no longer required by the label design. 9 intents; 62 live rows ↔
+62 folders, 1:1; every folder's F-tag and context match its row; folder-number == V3-row
+re-verified on all 23 migrated scenarios (0 mismatches).
+
+**Integrity problems found (all in `annotations/INTEGRITY.md`):**
+- **24 clips are shared byte-identically between rows #49 and #58.** User decision: #58 is a
+  **derived row** — #49's footage re-used with emotion+gesture masked, same trick as #6←#5 and
+  #9←#8. Recorded with the three objections raised at the time: (i) #49 is *train* and #58 is
+  *test*, so those frames sit on both sides of the split; (ii) the mask **changes** the intent
+  (F01→F06) where #6/#9 preserve it; (iii) #58's rationale makes direction the deciding cue
+  ("toward robot") while #49's footage walks toward the exit. `derived_rows.csv` carries a
+  `crosses_split` flag; #58's 24 derived clips must be scored separately from its own 19.
+- **35 exact-duplicate files** (23 within a folder, 12 claimed by two folders whose rows share
+  a cue tuple and intent, so label-neutral). Excluded with a `dup_of` pointer.
+- **Rows #40 and #56 have no RealSense clips at all** — unscoreable in the deployment view.
+- Rows **#57 and #63 were internally contradictory** (cue columns observed, Missing/Goal/Test
+  still masked; #63's motion read `sitting`). User: the cue columns win, read only cues +
+  intent. **Cost:** unmasked, both now repeat a training tuple, so test rows presenting an
+  unseen cue combination drop from 21 to **19 of 22**, and T03 loses both. `INTEGRITY.md`
+  tracks this in a "what the test rows actually test" section.
+- Cosmetic, unfixed in the doc: #18/#32 are test rows with no T-tag, #52 is train but tagged
+  T04/T05, #31's justification still cites F09, #63's justification is copy-pasted from #56.
+
+**New code:** `scripts/20_merged_annotations.py`, `scripts/realworld_eval/merged_common.py`.
+**Artifacts:** `data/final_merged/annotations/{scenarios_v3,clips,derived_rows,takes,retired_rows}.csv`
++ `INTEGRITY.md` (gitignored). 2,905 clips / **2,870 usable** = 1,866 train + 1,004 test;
+**2,726 need feature extraction, 144 reuse a source row's features**; person_id known for
+1,121 clips (all migrated ones) via `data/old` hashes.
+
+**Next:** extract per-frame features for the 2,726 non-derived clips against `data/final_merged`,
+then re-run the unimodal + fusion evaluation on the collision-free table.
+**Blocked on user:** person_id for the 781 non-migrated takes in `takes.csv`; re-record decision
+for #40/#56 RealSense.
+
+## 2026-07-28 — [WIN-3060] — Gap decomposition: the bottleneck is NOT perception
+
+**Did:** two studies on `data/final` (classroom, RealSense, 868 clips, real V3
+train/test split, 3 seeds, take-grouped val).
+
+**1. Clip-level vs window-level fusion** (user's proposal). Aggregating cues over a clip
+reads the intended cue better than a single window (emotion 0.771→0.802, gesture 0.788→0.805,
+motion 0.719→0.733) and clip-level training beats window+majority-vote (**0.374 vs 0.342**,
+macro-F1 0.320 vs 0.284). **Never mix** train-on-window with infer-on-clip (0.331/0.309 — worse
+than either consistent choice). mean ≈ peak > max. Clip-level wins with 784 samples vs 10,946 —
+the extra windows were largely redundant. **Decision: adopt 4 s mean-pooled aggregation windows
+(stride 1 s) as the primary path, KEEP the window pipeline for comparison** (user's request).
+
+**2. Gap decomposition — the important one.** Oracle test: same fusion architecture fed the
+table's TRUE cue labels instead of model predictions.
+| Configuration | Test clip acc |
+|---|---|
+| ceiling (direction ambiguity) | 0.900 |
+| rule-based + oracle cues | **0.900** (hits ceiling exactly) |
+| learned fusion + oracle cues | **0.500** ±0.000 |
+| learned fusion + real cues | 0.325 ±0.018 |
+
+→ **fusion generalisation cost 0.40 (dominant), perception cost 0.175, label ambiguity 0.10.**
+Even with perfect cues the learned head reaches only 0.50 while a hand-written rubric reaches
+0.90. Zero seed variance on the oracle run = systematic, not noise. Cause: the head trains on
+~19 distinct cue tuples and must classify 10 unseen-by-design tuples — a compositional
+generalisation failure. Rows #26 and #23 fail *even with perfect cues*; row #24 is the opposite
+(oracle 1.00, real 0.02) i.e. a genuine perception failure.
+
+**This overturns `ASSESSMENT.md` §5.** Its prediction "retrain fusion on data/final → high-0.8s"
+was tested and is wrong (0.325–0.374): the 10 test rows are unseen *by design*, so retraining
+cannot make them seen without leakage. Revised priority: (1) rubric-driven cue recombination
+spanning the combinatorial cue space — the only lever on the 0.40 band; (2) emotion/motion
+fine-tune — the 0.175 band; (3) direction cue — the 0.10 band.
+
+**Honesty note recorded in the doc:** training on rubric-generated samples means fusion is
+*taught* the rubric, not discovering it. Defensible framing: rules+perfect cues = 0.90 but
+rules+real cues are brittle (0.695 vs fusion 0.951 on data/old), so the learned model's
+contribution is *noise/missing-cue robustness*, and augmentation supplies the semantics it
+cannot induce from 19 tuples.
+
+**Artifacts:** `results/realworld_eval_final/GAP_DECOMPOSITION.md`.
+**Next:** implement rubric-driven recombination for `data/final` and re-measure the same table.
+
 ## 2026-07-24 — [WIN-3060] — Methodology docs + regenerated gesture report
 
 **Did:**

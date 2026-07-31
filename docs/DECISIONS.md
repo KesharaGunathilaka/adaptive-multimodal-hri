@@ -1,5 +1,32 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-07-31 [WIN-3060] (user)** `data/final dataset merged` renamed to **`data/final_merged`**
+  and adopted as the canonical root; `data/final` kept as the archive (it still holds the row-30
+  and dropped-`dilanka` clips). Spaces in the old name broke shell paths.
+- **2026-07-31 [WIN-3060] (user)** Where the V3 table contradicts itself, **the cue columns win
+  and only cues + intent are read** — applied to **#57** (Missing/G2/T03 dropped) and **#63**
+  (Missing `context` dropped, motion `sitting`→`sit`). Cost, accepted: unmasked, both rows now
+  repeat a training tuple, so test rows with an unseen cue combination fall 21→19 of 22 and T03
+  loses both. Tracked in `annotations/INTEGRITY.md`.
+- **2026-07-31 [WIN-3060] (user)** V3 row **#30 stays retired**; its 48 clips are not carried into
+  `data/final_merged` (they remain under `data/final`). Post-F09-merge the row was cue-identical
+  to #22, so keeping it would add a duplicate, not a distinction. Nothing downstream needs them.
+- **2026-07-31 [WIN-3060] (user)** The 24 clips shared by `S49_F01` and `S58_F06` make **#58 a
+  derived row**: #49's footage with emotion+gesture masked. Taken over three recorded objections —
+  #49 is *train* and #58 is *test* (same frames both sides), the mask *changes* the intent
+  (F01→F06) where #6/#9 preserve it, and #49 walks toward the exit while #58's rationale requires
+  walking toward the robot. `derived_rows.csv.crosses_split` flags it; score #58's 24 derived
+  clips separately from its own 19.
+- **2026-07-31 [WIN-3060]** V3 **#6/#9 are derived, not independent**: the recording team's own
+  `S06.txt`/`S09.txt` confirm they are S05/S08's videos with a channel masked. Extract features
+  once from the source row and mask at load — treating them as separate clips would duplicate
+  every window and leak identical frames across rows.
+- **2026-07-31 [WIN-3060]** Clip provenance (`source`, `old_clip_id`, `recorded_at`, `person_id`)
+  is recovered by **SHA-256**, not filename: the merge renamed every file to
+  `S{row}_F{intent}_c{NNN}`, which also made `14_final_annotations.py`'s folder<->row check pass
+  vacuously. `20_merged_annotations.py` re-derives the old scenario IDs by hash and re-runs the
+  real check (23 migrated scenarios, 0 mismatches).
+
 - **2026-07-20 [WIN-3060]** `protobuf==3.20.3` + `onnx==1.14.1` pinned — newer protobuf breaks
   mediapipe 0.10.x; pins recorded in requirements.txt for the HPC/Jetson.
 - **2026-07-20 [WIN-3060]** Context/CLIP not exported to ONNX — stays PyTorch on Jetson from the
