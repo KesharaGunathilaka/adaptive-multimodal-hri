@@ -3,6 +3,13 @@
 One decode pass per clip produces a compressed .npz cache:
     emotion_probs [T,7]  float32, NaN rows where no face was detected
     gesture_feats [T,185] float32 (NaN-safe per modalities/gesture/src/features.py)
+    pose_img      [T,33,4] float32 raw MediaPipe pose in IMAGE space
+                  (x, y normalised to frame, z, visibility), NaN where no pose.
+                  gesture_feats divides out the mid-shoulder centre and the
+                  shoulder-width scale, so apparent size and screen position —
+                  the only signals that distinguish approaching from receding —
+                  are unrecoverable from it. Cached here so a direction cue can
+                  be derived later without decoding every video again.
     pose_valid    [T]    bool    (MediaPipe Holistic pose found)
     face_valid    [T]    bool
     joints25      [T,25,3] float32, NaN where no pose (NTU layout, metres —
@@ -187,6 +194,7 @@ class PerFrameExtractor:
         return {
             "emotion_probs": emotion_probs,
             "gesture_feats": gesture_feats.astype(np.float32),
+            "pose_img": np.stack(pose_arr) if T else np.zeros((0, 33, 4), np.float32),
             "pose_valid": np.array(pose_valid, bool),
             "face_valid": np.array(face_valid, bool),
             "joints25": np.stack(joints_list) if T else np.zeros((0, 25, 3), np.float32),
