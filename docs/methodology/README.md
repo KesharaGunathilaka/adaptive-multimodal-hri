@@ -66,10 +66,11 @@ Orin Nano.
 | 1 | [01_data_and_labels.md](01_data_and_labels.md) | Dataset design (V3 table), recording, curation, `labels.csv`, actor-disjoint splits | `data/`, `scripts/00`,`01` |
 | 2 | [02_unimodal_models.md](02_unimodal_models.md) | The 4 perception models: architecture, I/O, accuracy, failure modes | `modalities/`, `MODEL_AUDIT.md` |
 | 3 | [03_feature_extraction.md](03_feature_extraction.md) | Two-pass extraction, time-based windowing, the feature table | `scripts/02`,`03`, `features_v1.parquet` |
-| 4 | [04_baselines.md](04_baselines.md) | Rule-based, unimodal, concat-MLP — the evidence floor for G1 | `fusion/baselines/`, `scripts/04` |
-| 5 | [05_fusion_model.md](05_fusion_model.md) | Attention architecture, augmentation, the [MISSING]-token result | `fusion/model/`, `scripts/05`,`06`,`07` |
-| 6 | [06_evaluation.md](06_evaluation.md) | Metrics, masking sweep, G3 spotlight, window sweep | `results/fusion_v1/` |
-| 7 | [07_deployment.md](07_deployment.md) | ONNX, TensorRT, streaming pipeline, policy, latency | `jetson_deploy/`, `scripts/08` |
+| 4 | [04_missing_cues.md](04_missing_cues.md) | How absence travels: designed vs runtime vs synthetic missingness, derived rows, table ceilings | `derived_rows.csv`, `scripts/17` |
+| 5 | [05_baselines.md](05_baselines.md) | Rule-based, unimodal, concat-MLP, oracle diagnostics — the evidence for *and against* G1 | `fusion/baselines/`, `scripts/04` |
+| 6 | [06_fusion_model.md](06_fusion_model.md) | Attention architecture, augmentation, the [MISSING]-token result | `fusion/model/`, `scripts/05`,`06`,`07` |
+| 7 | [07_evaluation.md](07_evaluation.md) | Metrics, masking sweep, G3 spotlight, window sweep, gap decomposition | `results/` |
+| 8 | [08_deployment.md](08_deployment.md) | ONNX, TensorRT, streaming pipeline, policy, latency | `jetson_deploy/`, `scripts/08` |
 
 ## 5. A note on honesty (important for the thesis)
 
