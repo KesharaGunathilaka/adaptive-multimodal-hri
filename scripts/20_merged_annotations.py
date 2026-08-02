@@ -2,7 +2,7 @@
 
 Writes, into `data/final_merged/annotations/`:
 
-    scenarios_v3.csv   the 62 live V3 rows from final_dataset_merged.docx
+    scenarios.csv      the 62 live V3 rows from final_dataset_merged.docx
     retired_rows.csv   rows the document blanked (#30), kept so the number is explained
     clips.csv          every video: probe + SHA-256 + provenance + label join + usability
     derived_rows.csv   rows materialised by masking another row's clips (#6, #9)
@@ -55,6 +55,16 @@ from scripts.realworld_eval.merged_common import (  # noqa: E402
     video_files)
 
 CACHE = ANNOT_DIR / ".probe_cache.json"
+
+
+def write_csv(df: pd.DataFrame, path: Path) -> None:
+    """to_csv, but say which file Excel is holding open instead of a traceback."""
+    try:
+        df.to_csv(path, index=False)
+    except PermissionError:
+        raise SystemExit(
+            f"cannot write {path.name} — it is open in another program "
+            f"(Excel locks the file). Close it and re-run.\n  {path}")
 
 # ── derived rows declared in code ───────────────────────────────────────────
 # #6 and #9 announce themselves with a .txt note on disk; #58 does not, so it is
@@ -418,8 +428,8 @@ def main() -> None:
     # ── write ──
     v3["n_clips"] = v3.v3_row.map(clips[clips.usable].groupby("v3_row").size()).fillna(0).astype(int)
     v3["observed_tuple"] = v3.observed_tuple.map(lambda t: "|".join(t))
-    v3.to_csv(SCENARIOS_CSV, index=False)
-    retired.to_csv(RETIRED_CSV, index=False)
+    write_csv(v3, SCENARIOS_CSV)
+    write_csv(retired, RETIRED_CSV)
 
     keep = ["clip_id", "context", "scenario_dir", "v3_row", "intent", "action",
             "split_design", "filepath", "view", "width", "height", "fps", "n_frames",
@@ -430,7 +440,7 @@ def main() -> None:
             "derived_from_row", "derived_from_clip_id", "dup_of",
             "usable", "exclude_kind", "exclude_reason", "scoreable", "caveat",
             "scenario_desc"]
-    clips[keep].to_csv(CLIPS_CSV, index=False)
+    write_csv(clips[keep], CLIPS_CSV)
 
     v3i = v3.set_index("v3_row")
     dv["split_design"] = dv.target_v3_row.map(v3i.split_design)
@@ -445,7 +455,7 @@ def main() -> None:
         ok[ok.derived_from_row.isna()].groupby("v3_row").size()).fillna(0).astype(int)
     # a derived row whose source sits in the other split shares frames across it
     dv["crosses_split"] = dv.split_design.ne(dv.source_split)
-    dv.to_csv(DERIVED_CSV, index=False)
+    write_csv(dv, DERIVED_CSV)
 
     takes = (clips[clips.usable]
              .groupby(["context", "scenario_dir", "v3_row", "intent", "split_design",
@@ -455,7 +465,7 @@ def main() -> None:
                   recorded_at=("recorded_at", "first"),
                   person_id=("person_id", lambda s: s.dropna().iloc[0] if s.notna().any() else None))
              .reset_index())
-    takes.to_csv(TAKES_CSV, index=False)
+    write_csv(takes, TAKES_CSV)
 
     write_integrity(v3, retired, clips, dv, issues)
 
