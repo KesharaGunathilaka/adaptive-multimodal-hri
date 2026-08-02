@@ -38,3 +38,9 @@ onnx/
 # TensorRT build artifacts (device-specific, never commit)
 *.engine
 jetson_deploy/onnx/trt_cache/
+
+# MLflow tracking store (per-machine, like checkpoints).
+# The cross-machine record is results/EXPERIMENTS.csv, which IS committed.
+mlruns/
+mlruns.db
+mlruns.db-journal

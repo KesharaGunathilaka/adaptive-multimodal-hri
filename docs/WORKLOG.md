@@ -1,5 +1,68 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-08-03 (later) — [WIN-3060] — MLflow experiment tracking
+
+**Did:** stood up MLflow with a storage model that mirrors the checkpoint manifest, so it
+does **not** become a second cross-machine sync problem.
+- `fusion/tracking.py` — thin wrapper; callers never import mlflow. `start_run()`
+  **requires** `dataset`, `split_kind` and `cues`, enforcing methodology 07 §7.1 (no number
+  in this project is interpretable without all three). Auto-tags git commit + dirty flag,
+  machine name, and the checkpoint-manifest hashes.
+- Store: **SQLite** `mlruns.db` + `mlruns/` in the repo root, both **gitignored**
+  (MLflow 3.x put the plain-file store in maintenance mode and refuses it by default).
+- `scripts/25_export_runs.py` → **`results/EXPERIMENTS.csv` + `.md`, which ARE committed**
+  — that export is the cross-machine record; there is no tracking store to merge.
+- `scripts/26_backfill_mlflow.py` — idempotent backfill from saved outputs; every run
+  tagged `backfilled=true` with its original measurement date so it is never mistaken for
+  a fresh one. **23 runs logged**: 6 baselines, 5 fusion ablations, 12 diagnostics
+  (masking sweep, window sweep, gap decomposition, clip-vs-window).
+
+**⚠ Environment trap found and fixed (would have broken the next extraction run):**
+installing mlflow upgraded **protobuf 3.20.3 → 6.33.6**, which breaks MediaPipe
+(`SymbolDatabase.GetPrototype` removed). **A blank-frame smoke test does NOT catch this**
+— it only fails once a frame actually yields landmark protos, which is why it passed my
+first check and failed on a real clip. Fix: `protobuf==3.20.3` restored and re-verified on
+a real frame (pose found ✅); mlflow 3.15 works fine under it. Both pins now carry
+explanatory comments in `requirements.txt`.
+
+**Next:** feature extraction for `data/final_merged` (2,869 usable clips; ~1,440 per-frame
+caches from `data/final` are re-mappable by sha256 instead of re-decoding), then the
+rubric-driven recombination experiment — logged through the tracker from the start.
+
+
+## 2026-08-03 — [WIN-3060] — `data/final_merged` audit + 3 fixes
+
+**Did:** independent audit of the merged dataset after the Aug 1–2 CSV rebuilds
+(later than `DATASET_FIXLIST.md`'s body). Findings appended to that file as
+"ADDENDUM — independent audit 2026-08-03" (N1–N9).
+
+**Confirmed healthy:** `person_id` now **100 %** (2,869/2,869) in clips.csv *and*
+splits.csv with **0 disagreements** (was 1,097/2,870); disk↔CSV exact (2,904 files,
+0 orphans, 0 missing — note the tree mixes `.mp4` + `.MOV`, a `*.mp4`-only glob
+under-counts by 516); 35 duplicates correctly excluded; 62 rows ↔ 62 folders.
+
+**Fixed this session:**
+- **N1 — no validation split.** `23_build_splits.py` now emits `split`
+  (train/val/test) beside `split_design`. val = actors **P04+P03** carved from
+  train: 319 clips (17.1 %), 30/40 rows covered, none emptied, actor-disjoint and
+  take-grouped — all self-checked by the script. **train 1,547 / val 319 / test
+  1,003.** Training code must read `split`, not `split_design`.
+- **N5 — stale takes.csv.** New `24_regen_takes.py` (script 20's aggregation,
+  surgical). Orphan `S28_F07` take 19 dropped; person_id **956 → 1,736/1,736**.
+  `22_verify_csvs.py` now reports zero inconsistencies.
+- **N6 — `21_validate_table.py` crashed** on stock Windows consoles
+  (UnicodeEncodeError on `→`) *while printing its own errors*. Now reconfigures
+  stdout/stderr to UTF-8; reports 1 error + 13 warnings and exits cleanly.
+
+**Still open, needs user decisions:** N4 (row #58 is 56 % train footage —
+`crosses_split=True`, and the mask changes intent F01→F06; exclude from headline
+test metrics or re-record), N9 (RealSense is only 275/1,003 test clips; 2 rows have
+zero, 4 test rows have 5–6), N7 (127 clips <4 s, min 1.67 s — need a policy), N8
+(only 289/1,015 `phone_1080p` clips are actually 1080p), N3 (rows 40/41/57 and
+38/63 duplicate a tuple across train/test → say "19 of 22 test rows are unseen"),
+N2 (6 actors span train/test **by design** — test measures compositional, not
+subject, generalisation), plus the pre-existing E1 action collision (#1 vs #18).
+
 ## 2026-08-01 — [WIN-3060] — V3 table corrected at source; CSVs verified against it
 
 **Did:** fixed `docs/final_dataset_merged.docx` itself (backup `.docx.bak`) rather than

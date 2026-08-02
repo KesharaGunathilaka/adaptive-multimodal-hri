@@ -16,6 +16,13 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
+# Findings contain non-ASCII (e.g. the arrow in "#1->A01"), and the default
+# Windows console codec is cp1252 -- without this the script dies with
+# UnicodeEncodeError *while printing its own error list*, hiding the result.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parents[1]
 DOCX = ROOT / "docs" / "final_dataset_merged.docx"
 

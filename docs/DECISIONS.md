@@ -1,5 +1,21 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-08-03 [WIN-3060] (user)** Headline test metrics exclude row #58's 24 derived
+  clips (`headline_eval=False` in splits.csv): they are row #49's TRAIN footage re-used
+  with emotion+gesture masked, and the mask flips the intent F01→F06. #58's own 19
+  clips stay. Quote the full-test number alongside the headline.
+- **2026-08-03 [WIN-3060] (user)** Report **all views**, not RealSense-only — 3.6× more
+  test data, and the resolution spread is evidenced not to matter (ASSESSMENT §4b: a 36×
+  pixel increase changed accuracy by <0.04). Truthful `resolution_class` and `orientation`
+  columns added because `view` mislabels 726/1,015 phone clips; per-view comparisons must
+  also note that view is confounded with context.
+- **2026-08-03 [WIN-3060] (user)** Clips shorter than the 4 s aggregation window are
+  aggregated over their **full length**, never padded — padding invents frames. The span
+  actually used is recorded per clip in `agg_span_s` (127 clips, min 1.67 s).
+- **2026-08-03 [WIN-3060]** `splits.csv` gains `split` (train/val/test) beside
+  `split_design`; val = actors P04+P03 carved from train, actor-disjoint and take-grouped.
+  **Training code reads `split`.**
+
 - **2026-08-01 [WIN-3060] (user)** The V3 table is fixed **at source** in
   `docs/final_dataset_merged.docx`, not worked around in code — so
   `merged_common.TABLE_OVERRIDES` is empty and the parser reads the document literally.
