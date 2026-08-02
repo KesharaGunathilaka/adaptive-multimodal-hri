@@ -28,6 +28,9 @@ optuna # For hyperparameter tuning in the scene classification module
 # protobuf breaks mediapipe 0.10.x; onnx is pinned to the last version
 # compatible with that protobuf.
 pyarrow
-protobuf==3.20.3
+mlflow            # experiment tracking; see fusion/tracking.py
+protobuf==3.20.3  # KEEP PINNED: installing mlflow upgrades protobuf, which
+                  # breaks mediapipe (SymbolDatabase.GetPrototype removed) on
+                  # any real frame. A blank-frame test does NOT catch it.
 onnx==1.14.1
 onnxruntime
