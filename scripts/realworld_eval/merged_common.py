@@ -34,7 +34,7 @@ CLIPS_ROOT = MERGED / "raw" / "clips"
 ANNOT_DIR = MERGED / "annotations"
 DOCX = ROOT / "docs" / "final_dataset_merged.docx"
 
-SCENARIOS_CSV = ANNOT_DIR / "scenarios_v3.csv"
+SCENARIOS_CSV = ANNOT_DIR / "scenarios.csv"
 CLIPS_CSV = ANNOT_DIR / "clips.csv"
 DERIVED_CSV = ANNOT_DIR / "derived_rows.csv"
 TAKES_CSV = ANNOT_DIR / "takes.csv"
@@ -64,39 +64,13 @@ _TS_RE = re.compile(r"(\d{4})[_-]?(\d{2})[_-]?(\d{2})[_ ](\d{2})[_]?(\d{2})[_]?(
 _TS_COMPACT_RE = re.compile(r"(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})")
 
 # ── deliberate disagreements with the .docx ─────────────────────────────────
-# Applied by parse_v3_table() and echoed into scenarios_v3.csv's override_note,
-# so nothing here is silent. Fix the document and these entries can go.
-TABLE_OVERRIDES: dict[int, dict] = {
-    30: {
-        "_retire": True,
-        "_note": "row blanked in final_dataset_merged.docx; its 48 clips are not "
-                 "in data/final_merged (they remain under data/final). Correct: "
-                 "post-F09-merge #30 was cue-identical to #22.",
-    },
-    57: {
-        "missing_v3": "",
-        "goal": "G1",
-        "test_tags": "T01, T05",
-        "_note": "user decision 2026-07-31: the row's Missing/Goal/Test cells are a "
-                 "mistake — take the cue columns (neutral/idle/stand/kitchen) as "
-                 "observed and read only the cues + intent. Goal/Test re-derived "
-                 "here (a fully observed test row is T01), not read from the doc.",
-    },
-    63: {
-        "motion_v3": "sit",
-        "missing_v3": "",
-        "goal": "G1",
-        "test_tags": "T01, T05",
-        "_note": "user decision 2026-07-31: the row's Missing cell ('context') is a "
-                 "mistake — take all four cues as observed and read only the cues + "
-                 "intent. Motion also read 'sitting'; normalised to the declared "
-                 "vocabulary. Goal/Test re-derived here, not read from the doc. "
-                 "CONSEQUENCE: unmasked, #63 is cue-identical to train row #38 "
-                 "(kitchen/sad/thumbs down/sit -> F04), so it no longer tests an "
-                 "unseen combination. Its justification cell is also copy-pasted "
-                 "from #56 and describes a beckon.",
-    },
-}
+# Applied by parse_v3_table() and echoed into scenarios.csv's override_note,
+# so nothing here is ever silent. Empty as of 2026-07-31: the document itself was
+# corrected (row #30 deleted, #57 and #63 unmasked, #63 moved to the end, the
+# Motion legend fixed, stale cross-references repaired), so the table now parses
+# straight through. Add an entry only when the document cannot be fixed at source,
+# and always with a `_note` saying why.
+TABLE_OVERRIDES: dict[int, dict] = {}
 
 
 # ── V3 table ────────────────────────────────────────────────────────────────

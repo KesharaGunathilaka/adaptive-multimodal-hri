@@ -1,5 +1,53 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-08-01 — [WIN-3060] — V3 table corrected at source; CSVs verified against it
+
+**Did:** fixed `docs/final_dataset_merged.docx` itself (backup `.docx.bak`) rather than
+patching around it in code, then rebuilt and verified the annotation tables.
+
+**Document edits — 45 cells, 1 row deleted, 1 row moved, 1 legend cell.** 11 label cells
+were Word run-splitting typos (`F0 1`, `T est`, `s t ep back`); 10 were the agreed changes
+(#18→`T01`, #32→`T01, T04`, #52 test tags cleared, #57 and #63 unmasked, #63 motion
+`sitting`→`sit`); 24 were prose. Row #30 (already empty) deleted; #63 moved to the end;
+`Motion (6)`→`Motion (4)`. **No cue, intent or action value changed in meaning** beyond the
+two authorised mask removals.
+
+**12 broken cross-references found and corrected** in the justification column: #47 cited
+itself (→#46); #39 named #57 as its context-masked twin (→#56); #9 named #54 as a
+gesture-masked test (→#53); #53 named #44 (→#43); #55 named #42 (→#41); #21/#62 listed #52
+among gesture-none rows (→#50); #26 listed #45 among both-hands-up rows (→#44); #2/#13/#28/#32
+named #60 as a conflict row when the kitchen conflict is #59. The last group matters: those
+sentences define the **T02** subset, and #60 (disgust + thumbs down) is an *aligned* row, not
+a conflict.
+
+**`TABLE_OVERRIDES` is now empty** — the parser reads the document literally again.
+
+**New code:** `scripts/21_validate_table.py` (validates the .docx against its own legend
+tables — vocabulary, code coverage, cue/action collisions, split-vs-T-tag, prose citations,
+scenario text vs cue columns) and `scripts/22_verify_csvs.py` (re-reads the .docx with an
+independent parser and compares **41,848 field values** across 62 rows and 2,905 clips).
+
+**Verification: ALL 62 rows match exactly** between the .docx and the CSVs. Table validator:
+**1 error, 13 warnings**.
+
+**The one error is the finding that matters:** rows **#1 (train, A01)** and **#18 (test, A09)**
+are the identical observable tuple `classroom|happy|wave|walk` with the same intent F01 but
+**different actions**. Deleting F09 removed the direction ambiguity from the intent level; it
+reappeared at the action level. F01 maps to A01/A09/A10 and no cue distinguishes them, so an
+`intent → action` policy leaves A09/A10 unreachable. `pose_img` is already cached for a
+direction feature (DECISIONS 2026-07-27) if that is the route chosen.
+
+**Also resolved:** row #63 *is* the old `S28_F10` — the 2026-07-16 S21/S28 collision. It is
+correctly relabelled F04 here, and #51 was re-recorded gesture-free on 2026-07-28 so F10 keeps
+its own footage. `data/old/labels.csv`'s `recombination_pool` status is obsolete. Row #50's
+"VERIFY against recordings" note is closed: the actors perform no thumbs down, `idle` is right.
+
+**Still open (see `docs/DATASET_FIXLIST.md`):** #31's motion says `step back` while its own
+text and justification say standing (unchanged, needs a call); rows #10/#40/#41 label a
+described point as `idle`, which the gesture model will not reproduce; `run` is used in three
+scenarios but is not in the motion vocabulary; #40/#56 have no RealSense clips; `person_id`
+for 781 takes.
+
 ## 2026-07-31 — [WIN-3060] — `data/final_merged` audited + annotated
 
 **Did:** audited the new collection root (`data/final dataset merged`, renamed to
@@ -94,6 +142,26 @@ cannot induce from 19 tuples.
 
 **Artifacts:** `results/realworld_eval_final/GAP_DECOMPOSITION.md`.
 **Next:** implement rubric-driven recombination for `data/final` and re-measure the same table.
+
+**3. Baseline reversal (added same day).** Rule-based on REAL 4 s-pooled cues, classroom:
+train 0.758 / **test 0.494** (macro-F1 0.473). Learned fusion on the same test rows: **0.325**.
+**On unseen cue combinations the rule baseline BEATS learned fusion** — the G1 claim as measured
+on `data/final` currently does not hold. On `data/old` (unseen *people*, familiar tuples) it was
+the reverse: fusion 0.951 vs rules 0.695. Each method has the strength the other lacks — rules
+generalise compositionally by construction, fusion absorbs perception noise. This is the
+argument for rubric-driven recombination (semantics from rules + robustness from real noisy
+cue vectors). Written up in `docs/methodology/05_baselines.md` §5.3–5.4.
+Methodology folder renumbered: 04 = missing cues (user-authored), 05 = baselines, 06 = fusion
+model, 07 = evaluation, 08 = deployment.
+
+**4. Methodology folder complete (2026-07-28).** All eight stages written:
+`docs/methodology/{README, 01_data_and_labels, 02_unimodal_models, 03_feature_extraction,
+04_missing_cues (user), 05_baselines, 06_fusion_model, 07_evaluation, 08_deployment}.md`.
+Each stage carries its own "open points you might want to change" list. Corrected two stale
+facts while writing: AttentionFusion is **70,090 params** (not ~110K as WORKLOG previously
+said), and the `data/final` "fusion+real, train rows ≈0.89" cell was removed from
+`05_baselines.md` because 0.887 belongs to the frozen fusion v1 model trained on `data/old`
+and is not comparable to the retrained model.
 
 ## 2026-07-24 — [WIN-3060] — Methodology docs + regenerated gesture report
 
@@ -215,7 +283,7 @@ interpretability figure; thesis tables from results/fusion_v1/.
 ## 2026-07-17 (later) — [WIN-3060] — Phase 2: attention fusion, augmentation, T03 sweep
 
 **Did:**
-- Built `fusion/model/`: `model.py` (attention fusion, 4 cue tokens + CLS, d=64, 2 layers, ~110K
+- Built `fusion/model/`: `model.py` (attention fusion, 4 cue tokens + CLS, d=64, 2 layers, 70,090
   params; `missing_mode='token'` learned [MISSING] embedding OR `'exclude'` key-padding mask),
   `datasets.py` (modality dropout ≤2 cues + confidence jitter, train-only), `recombine.py`
   (cue recombination: 7,600 synthetic windows for the 19 unrecorded V3 train rows incl. all F10;

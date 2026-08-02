@@ -1,5 +1,25 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-08-01 [WIN-3060] (user)** The V3 table is fixed **at source** in
+  `docs/final_dataset_merged.docx`, not worked around in code — so
+  `merged_common.TABLE_OVERRIDES` is empty and the parser reads the document literally.
+  Pre-fix copy kept at `final_dataset_merged.docx.bak`. Two scripts now enforce this:
+  `21_validate_table.py` (the .docx against its own legend) and `22_verify_csvs.py`
+  (41,848 field comparisons, .docx vs CSVs, using an independent parser so a bug in the
+  production one is caught rather than mirrored).
+- **2026-08-01 [WIN-3060] (user)** `#18` → `T01` and `#32` → `T01, T04`; neither gets `T05`,
+  because that tag means "naive per-cue rules fail" and post-F09-merge the `wave→greet` rule
+  *succeeds* on #18 while #32's aligned thumbs-up was never a rule failure.
+- **2026-08-01 [WIN-3060]** OPEN ISSUE, not yet decided: **F01 maps to three actions**
+  (A01/A09/A10) and rows #1 (train, A01) and #18 (test, A09) are the identical observable cue
+  tuple. Deleting F09 moved the direction ambiguity from the intent level to the **action**
+  level rather than removing it; an `intent → action` policy makes A09/A10 unreachable.
+- **2026-08-01 [WIN-3060]** The 2026-07-16 **S21/S28 collision is resolved** by this dataset:
+  row #63 *is* old `S28_F10`, correctly relabelled F04, and #51 was re-recorded gesture-free
+  on 2026-07-28 so F10 keeps its own footage. `data/old/labels.csv`'s `recombination_pool`
+  status is obsolete. Row #50's "VERIFY against recordings" is closed — the actors perform no
+  thumbs down, so `gesture = idle` is correct.
+
 - **2026-07-31 [WIN-3060] (user)** `data/final dataset merged` renamed to **`data/final_merged`**
   and adopted as the canonical root; `data/final` kept as the archive (it still holds the row-30
   and dropped-`dilanka` clips). Spaces in the old name broke shell paths.

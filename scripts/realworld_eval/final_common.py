@@ -1,5 +1,16 @@
 """Paths, V3 label authority and clip inventory for the `data/final` root.
 
+**SUPERSEDED 2026-07-31 — this module reads the OLD label table.** The current
+root is `data/final_merged` with `docs/final_dataset_merged.docx`; use
+`scripts/realworld_eval/merged_common.py` instead. The two tables disagree in
+ways that silently change every score: `final_dataset_merged.docx` deleted intent
+**F09** (relabelling rows #18/#19/#48/#49/#61 to F01), retired row **#30**, added
+row **#63**, unmasked **#57** and **#63**, and moved **#32** to Test / **#52** to
+Train. `data/final/annotations/*.csv` still describe the pre-merge design.
+
+Kept so the 2026-07-27 results under `results/realworld_eval_final/` remain
+reproducible. Do not use it to produce new numbers.
+
 `data/final` is the post-2026-07-25 collection root and is numbered differently
 from `data/`: **its scenario folders are named by Final_Dataset.docx V3 row
 number**, not by the old recording IDs. `data/final/raw/clips/classroom/S07_F04`
@@ -14,10 +25,18 @@ extracts it and joins it to a probed per-file inventory.
 from __future__ import annotations
 
 import re
+import warnings
 import zipfile
 from pathlib import Path
 
 import pandas as pd
+
+warnings.warn(
+    "final_common reads data/final + Final_Dataset.docx, the SUPERSEDED label "
+    "table (F09 still present, #30 live, #63 absent). New work must import "
+    "scripts.realworld_eval.merged_common, which reads data/final_merged. "
+    "See docs/DECISIONS.md 2026-07-31.",
+    DeprecationWarning, stacklevel=2)
 
 ROOT = Path(__file__).resolve().parents[2]
 FINAL = ROOT / "data" / "final"
