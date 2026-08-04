@@ -1,0 +1,214 @@
+"""Fine-tune the gesture TCN on the COMPLETE `data/final_merged` dataset.
+
+Warm-starts from the DEPLOYED checkpoint (`best_TCN.pth`). Uses class-weighted
+loss, NOT resampling -- gesture's own original recipe already does this
+(`modalities/gesture/src/training.py::fit`, `nn.CrossEntropyLoss(weight=...)`,
+no `WeightedRandomSampler`), and it is the gentler intervention the 2026-08-04
+motion finding pointed to (see script 34's docstring for the full reasoning).
+
+Training windows are the RAW 185-dim keypoint features from
+`WindowFeaturizer.raw_training_windows` -- the exact window-selection logic
+used at inference, so no train/serve skew. Source: cached per-frame arrays,
+no video decoding needed.
+
+    .venv/Scripts/python scripts/36_finetune_gesture.py
+"""
+from __future__ import annotations
+
+import json
+import sys
+import time
+from collections import Counter
+from pathlib import Path
+
+import numpy as np
+import torch
+import torch.nn as nn
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
+from torch.utils.data import DataLoader, Dataset
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from fusion.extraction.windows import WindowFeaturizer  # noqa: E402
+from fusion.tracking import start_run  # noqa: E402
+from scripts.realworld_eval.merged_unimodal import PERFRAME_DIR, load_clips  # noqa: E402
+
+GES_DIR = ROOT / "modalities" / "gesture"
+DEPLOYED_CKPT = GES_DIR / "checkpoints" / "best_TCN.pth"
+GESTURE_CFG = GES_DIR / "checkpoints" / "model_config.json"
+OUT_CKPT = GES_DIR / "checkpoints" / "best_TCN_finetuned_merged.pth"
+LOG_PATH = GES_DIR / "logs" / "training_log_finetuned_merged.json"
+
+GESTURE_LABELS = ["idle", "wave", "point", "thumbs_up", "thumbs_down",
+                  "beckoning", "raise_hand", "both_hands_up"]
+GT_TO_IDX = {n: i for i, n in enumerate(GESTURE_LABELS)}
+
+CONFIG = {"batch_size": 256, "epochs": 60, "lr": 0.0001, "weight_decay": 0.0001,
+         "patience": 12, "label_smoothing": 0.1}
+
+CACHE_DIR = ROOT / "data" / "final_merged" / "features" / "_gesture_finetune_windows"
+
+
+class WindowDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = torch.tensor(np.stack(X), dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.long)
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, i):
+        return self.X[i], self.y[i]
+
+
+def build_windows(clips, fz):
+    X, y = [], []
+    t0 = time.time()
+    for n, r in enumerate(clips.itertuples(), 1):
+        if r.gesture_masked or r.gt_gesture not in GT_TO_IDX:
+            continue
+        p = PERFRAME_DIR / f"{r.clip_id}.npz"
+        if not p.exists():
+            continue
+        npz = np.load(p)
+        label = GT_TO_IDX[r.gt_gesture]
+        for feat in fz.raw_training_windows(npz, "gesture"):
+            X.append(feat)
+            y.append(label)
+        if n % 300 == 0:
+            print(f"  [{n}/{len(clips)}] {len(X)} windows ({n/(time.time()-t0):.1f} clips/s)",
+                  flush=True)
+    return X, y
+
+
+def get_windows(device):
+    if CACHE_DIR.exists():
+        print(f"reusing cached windows from {CACHE_DIR}")
+        return (list(np.load(CACHE_DIR / "Xtr.npy")), list(np.load(CACHE_DIR / "ytr.npy")),
+                list(np.load(CACHE_DIR / "Xva.npy")), list(np.load(CACHE_DIR / "yva.npy")))
+    clips = load_clips()
+    clips = clips[clips.v3_row.notna()]
+    fz = WindowFeaturizer(device=device)
+    print("Building TRAIN windows...")
+    Xtr, ytr = build_windows(clips[clips.split == "train"], fz)
+    print(f"  {len(Xtr)} train windows")
+    print("Building VAL windows...")
+    Xva, yva = build_windows(clips[clips.split == "val"], fz)
+    print(f"  {len(Xva)} val windows\n")
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    np.save(CACHE_DIR / "Xtr.npy", np.stack(Xtr)); np.save(CACHE_DIR / "ytr.npy", np.array(ytr))
+    np.save(CACHE_DIR / "Xva.npy", np.stack(Xva)); np.save(CACHE_DIR / "yva.npy", np.array(yva))
+    return Xtr, ytr, Xva, yva
+
+
+def evaluate(model, loader, criterion, device):
+    model.eval()
+    total_loss, preds, labels = 0.0, [], []
+    with torch.no_grad():
+        for xb, yb in loader:
+            xb, yb = xb.to(device), yb.to(device)
+            logits = model(xb)
+            total_loss += criterion(logits, yb).item()
+            preds.extend(logits.argmax(1).cpu().tolist())
+            labels.extend(yb.cpu().tolist())
+    acc = sum(p == l for p, l in zip(preds, labels)) / len(labels)
+    macro_f1 = f1_score(labels, preds, average="macro", zero_division=0)
+    return total_loss / len(loader), acc, macro_f1, preds, labels
+
+
+def main() -> None:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"device={device}\n")
+
+    Xtr, ytr, Xva, yva = get_windows(device)
+    counts = Counter(ytr)
+    print("class distribution (train):")
+    for i, name in enumerate(GESTURE_LABELS):
+        print(f"  {name:<14}: {counts.get(i, 0):>6,}")
+
+    train_ds, val_ds = WindowDataset(Xtr, ytr), WindowDataset(Xva, yva)
+    train_loader = DataLoader(train_ds, batch_size=CONFIG["batch_size"], shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=CONFIG["batch_size"], shuffle=False)
+
+    weights = np.array([1.0 / counts.get(i, 1) for i in range(8)])
+    weights = weights / weights.sum() * 8
+    class_weights = torch.tensor(weights, dtype=torch.float32, device=device)
+    print(f"\nclass weights: {dict(zip(GESTURE_LABELS, weights.round(2)))}")
+
+    print(f"\nWarm-starting from {DEPLOYED_CKPT.name}")
+    sys.path.insert(0, str(GES_DIR))
+    from src.models import build_model  # noqa: E402
+    cfg = json.loads(GESTURE_CFG.read_text())
+    model = build_model(cfg["model"], **cfg.get("model_kwargs", {})).to(device)
+    model.load_state_dict(torch.load(DEPLOYED_CKPT, map_location=device, weights_only=True))
+    print(f"{sum(p.numel() for p in model.parameters()):,} params")
+
+    criterion = nn.CrossEntropyLoss(weight=class_weights,
+                                    label_smoothing=CONFIG["label_smoothing"])
+    opt = torch.optim.AdamW(model.parameters(), lr=CONFIG["lr"],
+                            weight_decay=CONFIG["weight_decay"])
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=CONFIG["epochs"])
+
+    best_score, patience_ctr, history, best_state = -1.0, 0, [], None
+    print(f"\n{'epoch':>6}{'train_loss':>12}{'train_acc':>11}{'val_loss':>10}{'val_acc':>9}{'val_f1':>8}")
+    for epoch in range(1, CONFIG["epochs"] + 1):
+        model.train()
+        tr_loss, tr_correct, tr_total = 0.0, 0, 0
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
+            opt.zero_grad()
+            logits = model(xb)
+            loss = criterion(logits, yb)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+            tr_loss += loss.item()
+            tr_correct += (logits.argmax(1) == yb).sum().item()
+            tr_total += len(yb)
+        sched.step()
+        val_loss, val_acc, val_f1, _, _ = evaluate(model, val_loader, criterion, device)
+        note = ""
+        if val_f1 > best_score:
+            best_score, patience_ctr = val_f1, 0
+            best_state = {k: v.clone() for k, v in model.state_dict().items()}
+            note = "<- best"
+        else:
+            patience_ctr += 1
+        history.append({"epoch": epoch, "train_loss": round(tr_loss / len(train_loader), 4),
+                        "train_acc": round(tr_correct / tr_total, 4),
+                        "val_loss": round(val_loss, 4), "val_acc": round(val_acc, 4),
+                        "val_macro_f1": round(val_f1, 4)})
+        print(f"{epoch:>6}{tr_loss/len(train_loader):>12.4f}"
+              f"{tr_correct/tr_total:>10.2%}{val_loss:>10.4f}{val_acc:>9.2%}{val_f1:>8.3f}  {note}")
+        if patience_ctr >= CONFIG["patience"]:
+            print(f"early stop at epoch {epoch}")
+            break
+
+    model.load_state_dict(best_state)
+    OUT_CKPT.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), OUT_CKPT)
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    LOG_PATH.write_text(json.dumps({"config": CONFIG, "history": history}, indent=2))
+
+    _, val_acc, val_f1, val_preds, val_labels = evaluate(model, val_loader, criterion, device)
+    print(f"\nbest val macro-F1={best_score:.3f} (acc={val_acc:.3%})")
+    print(classification_report(val_labels, val_preds, labels=list(range(8)),
+                                target_names=GESTURE_LABELS, digits=3, zero_division=0))
+    print(confusion_matrix(val_labels, val_preds))
+    print(f"\n-> {OUT_CKPT}")
+
+    with start_run("02_fusion", "gesture__finetune_merged", dataset="final_merged",
+                   split_kind="scenarios", cues="real",
+                   params={"model": "gesture_tcn", **CONFIG, "warm_start": "deployed",
+                           "loss_weighting": "class_weighted_ce",
+                           "n_train_windows": len(Xtr), "n_val_windows": len(Xva)},
+                   notes="fine-tune on complete dataset; see script 32 for "
+                        "before/after headline comparison") as run:
+        run.log_metrics({"val_acc": val_acc, "val_macro_f1": best_score,
+                         "best_epoch": history[-1]["epoch"]})
+        run.log_checkpoint(OUT_CKPT)
+
+
+if __name__ == "__main__":
+    main()
