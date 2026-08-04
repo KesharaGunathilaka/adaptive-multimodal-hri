@@ -1,0 +1,626 @@
+{
+  "emotion": {
+    "designed_missing": {
+      "n_clips": 199,
+      "n_windows": 2783,
+      "observation_rate": 1.0,
+      "per_scenario": {
+        "S22_F01": 1.0,
+        "S25_F04": 1.0,
+        "S49_F01": 1.0,
+        "S58_F06": 1.0
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 1.0,
+      "clips_never_observed": 0
+    },
+    "window": {
+      "n": 38351,
+      "acc": 0.8489,
+      "macro_f1": 0.8361,
+      "n_classes": 7
+    },
+    "clip": {
+      "n": 2670,
+      "acc": 0.8719,
+      "macro_f1": 0.8591,
+      "n_classes": 7
+    },
+    "headline": {
+      "n": 856,
+      "acc": 0.7617,
+      "macro_f1": 0.6568,
+      "n_classes": 6
+    },
+    "by_split": {
+      "test": {
+        "n": 856,
+        "acc": 0.7617,
+        "macro_f1": 0.6568,
+        "n_classes": 6
+      },
+      "train": {
+        "n": 1507,
+        "acc": 0.9589,
+        "macro_f1": 0.9596,
+        "n_classes": 7
+      },
+      "val": {
+        "n": 307,
+        "acc": 0.7524,
+        "macro_f1": 0.7479,
+        "n_classes": 7
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 1108,
+        "acc": 0.9504,
+        "macro_f1": 0.9373,
+        "n_classes": 7
+      },
+      "raw_take": {
+        "n": 85,
+        "acc": 0.8824,
+        "macro_f1": 0.7525,
+        "n_classes": 6
+      },
+      "raw_take_20260602": {
+        "n": 48,
+        "acc": 0.9375,
+        "macro_f1": 0.4877,
+        "n_classes": 2
+      },
+      "raw_take_20260603": {
+        "n": 12,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260706": {
+        "n": 36,
+        "acc": 0.9722,
+        "macro_f1": 0.6596,
+        "n_classes": 2
+      },
+      "raw_take_20260707": {
+        "n": 26,
+        "acc": 0.5769,
+        "macro_f1": 0.3659,
+        "n_classes": 2
+      },
+      "raw_take_20260725": {
+        "n": 744,
+        "acc": 0.8011,
+        "macro_f1": 0.6447,
+        "n_classes": 6
+      },
+      "raw_take_20260727": {
+        "n": 282,
+        "acc": 0.8156,
+        "macro_f1": 0.7088,
+        "n_classes": 6
+      },
+      "raw_take_20260728": {
+        "n": 329,
+        "acc": 0.8116,
+        "macro_f1": 0.66,
+        "n_classes": 6
+      }
+    },
+    "by_context": {
+      "classroom": {
+        "n": 1432,
+        "acc": 0.8792,
+        "macro_f1": 0.8704,
+        "n_classes": 7
+      },
+      "kitchen": {
+        "n": 1238,
+        "acc": 0.8635,
+        "macro_f1": 0.8468,
+        "n_classes": 7
+      }
+    },
+    "by_resolution": {
+      "1080p": {
+        "n": 269,
+        "acc": 0.8513,
+        "macro_f1": 0.7005,
+        "n_classes": 6
+      },
+      "480p": {
+        "n": 1283,
+        "acc": 0.9275,
+        "macro_f1": 0.9073,
+        "n_classes": 7
+      },
+      "4k": {
+        "n": 454,
+        "acc": 0.7731,
+        "macro_f1": 0.7618,
+        "n_classes": 6
+      },
+      "576p": {
+        "n": 76,
+        "acc": 0.7895,
+        "macro_f1": 0.6081,
+        "n_classes": 6
+      },
+      "720p": {
+        "n": 588,
+        "acc": 0.8469,
+        "macro_f1": 0.8124,
+        "n_classes": 7
+      }
+    }
+  },
+  "gesture": {
+    "designed_missing": {
+      "n_clips": 286,
+      "n_windows": 3893,
+      "observation_rate": 1.0,
+      "per_scenario": {
+        "S09_F04": 1.0,
+        "S12_F06": 1.0,
+        "S23_F02": 1.0,
+        "S43_F06": 1.0,
+        "S53_F02": 1.0,
+        "S58_F06": 1.0
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 0.999,
+      "clips_never_observed": 2
+    },
+    "window": {
+      "n": 37212,
+      "acc": 0.9497,
+      "macro_f1": 0.9458,
+      "n_classes": 8
+    },
+    "clip": {
+      "n": 2581,
+      "acc": 0.9535,
+      "macro_f1": 0.9501,
+      "n_classes": 8
+    },
+    "headline": {
+      "n": 877,
+      "acc": 0.8643,
+      "macro_f1": 0.8355,
+      "n_classes": 8
+    },
+    "by_split": {
+      "test": {
+        "n": 877,
+        "acc": 0.8643,
+        "macro_f1": 0.8355,
+        "n_classes": 8
+      },
+      "train": {
+        "n": 1409,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 8
+      },
+      "val": {
+        "n": 295,
+        "acc": 0.9966,
+        "macro_f1": 0.9977,
+        "n_classes": 7
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 991,
+        "acc": 0.9929,
+        "macro_f1": 0.9892,
+        "n_classes": 8
+      },
+      "raw_take": {
+        "n": 73,
+        "acc": 0.8767,
+        "macro_f1": 0.82,
+        "n_classes": 6
+      },
+      "raw_take_20260602": {
+        "n": 48,
+        "acc": 0.875,
+        "macro_f1": 0.5951,
+        "n_classes": 2
+      },
+      "raw_take_20260603": {
+        "n": 12,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260706": {
+        "n": 36,
+        "acc": 0.6667,
+        "macro_f1": 0.4575,
+        "n_classes": 2
+      },
+      "raw_take_20260707": {
+        "n": 26,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260725": {
+        "n": 804,
+        "acc": 0.9104,
+        "macro_f1": 0.8719,
+        "n_classes": 8
+      },
+      "raw_take_20260727": {
+        "n": 243,
+        "acc": 0.9547,
+        "macro_f1": 0.9597,
+        "n_classes": 7
+      },
+      "raw_take_20260728": {
+        "n": 348,
+        "acc": 0.9914,
+        "macro_f1": 0.9672,
+        "n_classes": 7
+      }
+    },
+    "by_context": {
+      "classroom": {
+        "n": 1375,
+        "acc": 0.9476,
+        "macro_f1": 0.9382,
+        "n_classes": 8
+      },
+      "kitchen": {
+        "n": 1206,
+        "acc": 0.9602,
+        "macro_f1": 0.966,
+        "n_classes": 8
+      }
+    },
+    "by_resolution": {
+      "1080p": {
+        "n": 291,
+        "acc": 0.9244,
+        "macro_f1": 0.8916,
+        "n_classes": 8
+      },
+      "480p": {
+        "n": 1177,
+        "acc": 0.966,
+        "macro_f1": 0.9597,
+        "n_classes": 8
+      },
+      "4k": {
+        "n": 472,
+        "acc": 0.9301,
+        "macro_f1": 0.9087,
+        "n_classes": 8
+      },
+      "576p": {
+        "n": 76,
+        "acc": 0.9474,
+        "macro_f1": 0.7953,
+        "n_classes": 6
+      },
+      "720p": {
+        "n": 565,
+        "acc": 0.9628,
+        "macro_f1": 0.9687,
+        "n_classes": 8
+      }
+    }
+  },
+  "motion": {
+    "designed_missing": {
+      "n_clips": 0,
+      "n_windows": 0,
+      "observation_rate": null,
+      "per_scenario": {}
+    },
+    "coverage": {
+      "window_observation_rate": 0.999,
+      "clips_never_observed": 2
+    },
+    "window": {
+      "n": 41098,
+      "acc": 0.6469,
+      "macro_f1": 0.5763,
+      "n_classes": 4
+    },
+    "clip": {
+      "n": 2867,
+      "acc": 0.6624,
+      "macro_f1": 0.5944,
+      "n_classes": 4
+    },
+    "headline": {
+      "n": 979,
+      "acc": 0.665,
+      "macro_f1": 0.5885,
+      "n_classes": 4
+    },
+    "by_split": {
+      "test": {
+        "n": 1003,
+        "acc": 0.671,
+        "macro_f1": 0.5905,
+        "n_classes": 4
+      },
+      "train": {
+        "n": 1545,
+        "acc": 0.655,
+        "macro_f1": 0.5605,
+        "n_classes": 4
+      },
+      "val": {
+        "n": 319,
+        "acc": 0.6708,
+        "macro_f1": 0.6823,
+        "n_classes": 4
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 1106,
+        "acc": 0.8617,
+        "macro_f1": 0.7795,
+        "n_classes": 4
+      },
+      "raw_take": {
+        "n": 85,
+        "acc": 0.4118,
+        "macro_f1": 0.4464,
+        "n_classes": 4
+      },
+      "raw_take_20260602": {
+        "n": 48,
+        "acc": 0.4375,
+        "macro_f1": 0.1522,
+        "n_classes": 1
+      },
+      "raw_take_20260603": {
+        "n": 12,
+        "acc": 0.0,
+        "macro_f1": 0.0,
+        "n_classes": 1
+      },
+      "raw_take_20260706": {
+        "n": 36,
+        "acc": 0.25,
+        "macro_f1": 0.1,
+        "n_classes": 1
+      },
+      "raw_take_20260707": {
+        "n": 26,
+        "acc": 0.4231,
+        "macro_f1": 0.25,
+        "n_classes": 2
+      },
+      "raw_take_20260725": {
+        "n": 848,
+        "acc": 0.5684,
+        "macro_f1": 0.4022,
+        "n_classes": 4
+      },
+      "raw_take_20260727": {
+        "n": 301,
+        "acc": 0.6179,
+        "macro_f1": 0.5794,
+        "n_classes": 4
+      },
+      "raw_take_20260728": {
+        "n": 405,
+        "acc": 0.4988,
+        "macro_f1": 0.4507,
+        "n_classes": 4
+      }
+    },
+    "by_context": {
+      "classroom": {
+        "n": 1534,
+        "acc": 0.7314,
+        "macro_f1": 0.6068,
+        "n_classes": 4
+      },
+      "kitchen": {
+        "n": 1333,
+        "acc": 0.5829,
+        "macro_f1": 0.5545,
+        "n_classes": 4
+      }
+    },
+    "by_resolution": {
+      "1080p": {
+        "n": 305,
+        "acc": 0.5279,
+        "macro_f1": 0.392,
+        "n_classes": 4
+      },
+      "480p": {
+        "n": 1337,
+        "acc": 0.7509,
+        "macro_f1": 0.6526,
+        "n_classes": 4
+      },
+      "4k": {
+        "n": 516,
+        "acc": 0.595,
+        "macro_f1": 0.5284,
+        "n_classes": 4
+      },
+      "576p": {
+        "n": 76,
+        "acc": 0.7368,
+        "macro_f1": 0.6757,
+        "n_classes": 4
+      },
+      "720p": {
+        "n": 633,
+        "acc": 0.5861,
+        "macro_f1": 0.5733,
+        "n_classes": 4
+      }
+    }
+  },
+  "context": {
+    "designed_missing": {
+      "n_clips": 146,
+      "n_windows": 2072,
+      "observation_rate": 1.0,
+      "per_scenario": {
+        "S06_F03": 1.0,
+        "S24_F03": 1.0,
+        "S56_F04": 1.0
+      }
+    },
+    "coverage": {
+      "window_observation_rate": 1.0,
+      "clips_never_observed": 0
+    },
+    "window": {
+      "n": 39072,
+      "acc": 0.9592,
+      "macro_f1": 0.389,
+      "n_classes": 2
+    },
+    "clip": {
+      "n": 2723,
+      "acc": 0.96,
+      "macro_f1": 0.3894,
+      "n_classes": 2
+    },
+    "headline": {
+      "n": 892,
+      "acc": 0.9709,
+      "macro_f1": 0.4915,
+      "n_classes": 2
+    },
+    "by_split": {
+      "test": {
+        "n": 916,
+        "acc": 0.9716,
+        "macro_f1": 0.4919,
+        "n_classes": 2
+      },
+      "train": {
+        "n": 1488,
+        "acc": 0.9556,
+        "macro_f1": 0.4841,
+        "n_classes": 2
+      },
+      "val": {
+        "n": 319,
+        "acc": 0.9467,
+        "macro_f1": 0.6444,
+        "n_classes": 2
+      }
+    },
+    "by_source": {
+      "curated_clip": {
+        "n": 1049,
+        "acc": 0.9733,
+        "macro_f1": 0.4892,
+        "n_classes": 2
+      },
+      "raw_take": {
+        "n": 85,
+        "acc": 0.9647,
+        "macro_f1": 0.491,
+        "n_classes": 1
+      },
+      "raw_take_20260602": {
+        "n": 48,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260603": {
+        "n": 12,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260706": {
+        "n": 36,
+        "acc": 0.9444,
+        "macro_f1": 0.3238,
+        "n_classes": 1
+      },
+      "raw_take_20260707": {
+        "n": 26,
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n_classes": 1
+      },
+      "raw_take_20260725": {
+        "n": 795,
+        "acc": 0.9987,
+        "macro_f1": 0.4997,
+        "n_classes": 1
+      },
+      "raw_take_20260727": {
+        "n": 267,
+        "acc": 0.809,
+        "macro_f1": 0.2236,
+        "n_classes": 1
+      },
+      "raw_take_20260728": {
+        "n": 405,
+        "acc": 0.9407,
+        "macro_f1": 0.3232,
+        "n_classes": 1
+      }
+    },
+    "by_context": {
+      "classroom": {
+        "n": 1424,
+        "acc": 0.9993,
+        "macro_f1": 0.4998,
+        "n_classes": 1
+      },
+      "kitchen": {
+        "n": 1299,
+        "acc": 0.9169,
+        "macro_f1": 0.1913,
+        "n_classes": 1
+      }
+    },
+    "by_resolution": {
+      "1080p": {
+        "n": 287,
+        "acc": 0.9965,
+        "macro_f1": 0.666,
+        "n_classes": 2
+      },
+      "480p": {
+        "n": 1264,
+        "acc": 0.985,
+        "macro_f1": 0.6547,
+        "n_classes": 2
+      },
+      "4k": {
+        "n": 481,
+        "acc": 0.921,
+        "macro_f1": 0.6331,
+        "n_classes": 2
+      },
+      "576p": {
+        "n": 76,
+        "acc": 0.9079,
+        "macro_f1": 0.2379,
+        "n_classes": 1
+      },
+      "720p": {
+        "n": 615,
+        "acc": 0.9285,
+        "macro_f1": 0.1926,
+        "n_classes": 1
+      }
+    }
+  }
+}

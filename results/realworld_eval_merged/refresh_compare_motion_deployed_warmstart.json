@@ -1,0 +1,58 @@
+{
+  "motion": {
+    "before": {
+      "headline": {
+        "n": 979,
+        "acc": 0.665,
+        "macro_f1": 0.5885
+      },
+      "full_test": {
+        "n": 1003,
+        "acc": 0.671,
+        "macro_f1": 0.5905
+      },
+      "test_curated_clip": {
+        "n": 100,
+        "acc": 1.0,
+        "macro_f1": 1.0
+      },
+      "test_raw_take": {
+        "n": 903,
+        "acc": 0.6346,
+        "macro_f1": 0.5421
+      },
+      "val": {
+        "n": 319,
+        "acc": 0.6708,
+        "macro_f1": 0.6823
+      }
+    },
+    "after": {
+      "headline": {
+        "n": 979,
+        "acc": 0.5598,
+        "macro_f1": 0.4872
+      },
+      "full_test": {
+        "n": 1003,
+        "acc": 0.5703,
+        "macro_f1": 0.4926
+      },
+      "test_curated_clip": {
+        "n": 100,
+        "acc": 0.88,
+        "macro_f1": 0.4608
+      },
+      "test_raw_take": {
+        "n": 903,
+        "acc": 0.536,
+        "macro_f1": 0.463
+      },
+      "val": {
+        "n": 319,
+        "acc": 0.8088,
+        "macro_f1": 0.7935
+      }
+    }
+  }
+}

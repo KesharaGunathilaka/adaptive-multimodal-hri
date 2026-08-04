@@ -1,0 +1,178 @@
+{
+  "motion": {
+    "before": {
+      "designed_missing": {
+        "n_clips": 0,
+        "n_windows": 0,
+        "observation_rate": null,
+        "per_scenario": {}
+      },
+      "coverage": {
+        "window_observation_rate": 0.999,
+        "clips_never_observed": 2
+      },
+      "window": {
+        "n": 41098,
+        "acc": 0.6469,
+        "macro_f1": 0.5763,
+        "n_classes": 4
+      },
+      "clip": {
+        "n": 2867,
+        "acc": 0.6624,
+        "macro_f1": 0.5944,
+        "n_classes": 4
+      },
+      "headline": {
+        "n": 979,
+        "acc": 0.665,
+        "macro_f1": 0.5885,
+        "n_classes": 4
+      },
+      "by_split": {
+        "test": {
+          "n": 1003,
+          "acc": 0.671,
+          "macro_f1": 0.5905,
+          "n_classes": 4
+        },
+        "train": {
+          "n": 1545,
+          "acc": 0.655,
+          "macro_f1": 0.5605,
+          "n_classes": 4
+        },
+        "val": {
+          "n": 319,
+          "acc": 0.6708,
+          "macro_f1": 0.6823,
+          "n_classes": 4
+        }
+      },
+      "by_source": {
+        "curated_clip": {
+          "n": 1106,
+          "acc": 0.8617,
+          "macro_f1": 0.7795,
+          "n_classes": 4
+        },
+        "raw_take": {
+          "n": 85,
+          "acc": 0.4118,
+          "macro_f1": 0.4464,
+          "n_classes": 4
+        },
+        "raw_take_20260602": {
+          "n": 48,
+          "acc": 0.4375,
+          "macro_f1": 0.1522,
+          "n_classes": 1
+        },
+        "raw_take_20260603": {
+          "n": 12,
+          "acc": 0.0,
+          "macro_f1": 0.0,
+          "n_classes": 1
+        },
+        "raw_take_20260706": {
+          "n": 36,
+          "acc": 0.25,
+          "macro_f1": 0.1,
+          "n_classes": 1
+        },
+        "raw_take_20260707": {
+          "n": 26,
+          "acc": 0.4231,
+          "macro_f1": 0.25,
+          "n_classes": 2
+        },
+        "raw_take_20260725": {
+          "n": 848,
+          "acc": 0.5684,
+          "macro_f1": 0.4022,
+          "n_classes": 4
+        },
+        "raw_take_20260727": {
+          "n": 301,
+          "acc": 0.6179,
+          "macro_f1": 0.5794,
+          "n_classes": 4
+        },
+        "raw_take_20260728": {
+          "n": 405,
+          "acc": 0.4988,
+          "macro_f1": 0.4507,
+          "n_classes": 4
+        }
+      },
+      "by_context": {
+        "classroom": {
+          "n": 1534,
+          "acc": 0.7314,
+          "macro_f1": 0.6068,
+          "n_classes": 4
+        },
+        "kitchen": {
+          "n": 1333,
+          "acc": 0.5829,
+          "macro_f1": 0.5545,
+          "n_classes": 4
+        }
+      },
+      "by_resolution": {
+        "1080p": {
+          "n": 305,
+          "acc": 0.5279,
+          "macro_f1": 0.392,
+          "n_classes": 4
+        },
+        "480p": {
+          "n": 1337,
+          "acc": 0.7509,
+          "macro_f1": 0.6526,
+          "n_classes": 4
+        },
+        "4k": {
+          "n": 516,
+          "acc": 0.595,
+          "macro_f1": 0.5284,
+          "n_classes": 4
+        },
+        "576p": {
+          "n": 76,
+          "acc": 0.7368,
+          "macro_f1": 0.6757,
+          "n_classes": 4
+        },
+        "720p": {
+          "n": 633,
+          "acc": 0.5861,
+          "macro_f1": 0.5733,
+          "n_classes": 4
+        }
+      }
+    },
+    "after": {
+      "headline": {
+        "n": 979,
+        "acc": 0.5281,
+        "macro_f1": 0.4588
+      },
+      "full_test": {
+        "n": 1003,
+        "acc": 0.5394,
+        "macro_f1": 0.4639
+      },
+      "curated_clip": {
+        "n": 1106,
+        "acc": 0.915,
+        "macro_f1": 0.8884
+      },
+      "raw_take": {
+        "n": 1761,
+        "acc": 0.732,
+        "macro_f1": 0.6977
+      }
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "before_deployed": {
+    "headline": {
+      "n": 856,
+      "acc": 0.6811,
+      "macro_f1": 0.587
+    },
+    "by_context": {
+      "classroom": {
+        "n": 406,
+        "acc": 0.633,
+        "macro_f1": 0.4991
+      },
+      "kitchen": {
+        "n": 450,
+        "acc": 0.7244,
+        "macro_f1": 0.5945
+      }
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.9067,
+        "macro_f1": 0.2378
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.3889,
+        "macro_f1": 0.112
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.4215,
+        "macro_f1": 0.1483
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7431,
+        "macro_f1": 0.1218
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.7895,
+        "macro_f1": 0.1471
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.6835,
+        "macro_f1": 0.116
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.96,
+      "macro_f1": 0.6515
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.6442,
+      "macro_f1": 0.5605
+    }
+  },
+  "after_finetuned": {
+    "headline": {
+      "n": 856,
+      "acc": 0.7745,
+      "macro_f1": 0.6681
+    },
+    "by_context": {
+      "classroom": {
+        "n": 406,
+        "acc": 0.7463,
+        "macro_f1": 0.6276
+      },
+      "kitchen": {
+        "n": 450,
+        "acc": 0.8,
+        "macro_f1": 0.6814
+      }
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.9333,
+        "macro_f1": 0.3218
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.7778,
+        "macro_f1": 0.175
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.8099,
+        "macro_f1": 0.179
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7639,
+        "macro_f1": 0.1732
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.6015,
+        "macro_f1": 0.1502
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.7569,
+        "macro_f1": 0.1436
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.87,
+      "macro_f1": 0.463
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.7619,
+      "macro_f1": 0.66
+    }
+  }
+}

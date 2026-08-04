@@ -1,0 +1,66 @@
+{
+  "plain": {
+    "headline": {
+      "acc_mean": 0.5475,
+      "acc_std": 0.0251,
+      "macro_f1_mean": 0.438,
+      "macro_f1_std": 0.0228,
+      "n": 979
+    },
+    "full_test": {
+      "acc_mean": 0.5344,
+      "acc_std": 0.0245,
+      "macro_f1_mean": 0.433,
+      "macro_f1_std": 0.0225,
+      "n": 1003
+    }
+  },
+  "augmented": {
+    "headline": {
+      "acc_mean": 0.5264,
+      "acc_std": 0.027,
+      "macro_f1_mean": 0.4267,
+      "macro_f1_std": 0.0367,
+      "n": 979
+    },
+    "full_test": {
+      "acc_mean": 0.5138,
+      "acc_std": 0.0264,
+      "macro_f1_mean": 0.422,
+      "macro_f1_std": 0.0363,
+      "n": 1003
+    }
+  },
+  "recomb_only": {
+    "headline": {
+      "acc_mean": 0.7085,
+      "acc_std": 0.0076,
+      "macro_f1_mean": 0.6147,
+      "macro_f1_std": 0.0091,
+      "n": 979
+    },
+    "full_test": {
+      "acc_mean": 0.6916,
+      "acc_std": 0.0074,
+      "macro_f1_mean": 0.605,
+      "macro_f1_std": 0.0081,
+      "n": 1003
+    }
+  },
+  "full": {
+    "headline": {
+      "acc_mean": 0.7191,
+      "acc_std": 0.0164,
+      "macro_f1_mean": 0.6241,
+      "macro_f1_std": 0.0226,
+      "n": 979
+    },
+    "full_test": {
+      "acc_mean": 0.7019,
+      "acc_std": 0.016,
+      "macro_f1_mean": 0.6139,
+      "macro_f1_std": 0.0211,
+      "n": 1003
+    }
+  }
+}

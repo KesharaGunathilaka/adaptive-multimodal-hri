@@ -1,6 +1,6 @@
 # Experiment ledger
 
-23 runs · exported from `mlruns.db` by `scripts/25_export_runs.py`.
+51 runs · exported from `mlruns.db` by `scripts/25_export_runs.py`.
 
 `mlruns.db` is per-machine and gitignored; **this file is the cross-machine record**. Full parameter/metric set in `EXPERIMENTS.csv`.
 
@@ -27,17 +27,50 @@
 
 ## 03_diagnostics
 
-| experiment     | run_name                               | dataset   | split_kind   | cues   | model            | aggregation            |   test_clip_acc |   test_clip_macro_f1 |   val_clip_acc |
-|:---------------|:---------------------------------------|:----------|:-------------|:-------|:-----------------|:-----------------------|----------------:|---------------------:|---------------:|
-| 03_diagnostics | old__masking_sweep                     | old       | people       | real   | attention_vs_mlp | window_vote            |         nan     |              nan     |            nan |
-| 03_diagnostics | old__window_sweep                      | old       | people       | real   | attention_fusion | window                 |         nan     |              nan     |            nan |
-| 03_diagnostics | classroom__rules_oracle                | final     | scenarios    | oracle | rule_based       | clip_mean_4s           |           0.9   |              nan     |            nan |
-| 03_diagnostics | classroom__fusion_oracle               | final     | scenarios    | oracle | attention_fusion | clip_mean_4s           |           0.5   |              nan     |            nan |
-| 03_diagnostics | classroom__rules_real                  | final     | scenarios    | real   | rule_based       | clip_mean_4s           |           0.494 |                0.473 |            nan |
-| 03_diagnostics | classroom__fusion_real                 | final     | scenarios    | real   | attention_fusion | clip_mean_4s           |           0.325 |                0.242 |            nan |
-| 03_diagnostics | clipvswin__train_window_vote           | final     | scenarios    | real   | attention_fusion | window_vote            |           0.342 |                0.284 |            nan |
-| 03_diagnostics | clipvswin__train_window_infer_clipmean | final     | scenarios    | real   | attention_fusion | window_train_clip_mean |           0.331 |                0.269 |            nan |
-| 03_diagnostics | clipvswin__train_window_infer_clipmax  | final     | scenarios    | real   | attention_fusion | window_train_clip_max  |           0.309 |                0.246 |            nan |
-| 03_diagnostics | clipvswin__clip_mean                   | final     | scenarios    | real   | attention_fusion | clip_mean              |           0.374 |                0.32  |            nan |
-| 03_diagnostics | clipvswin__clip_max                    | final     | scenarios    | real   | attention_fusion | clip_max               |           0.338 |                0.289 |            nan |
-| 03_diagnostics | clipvswin__clip_peak                   | final     | scenarios    | real   | attention_fusion | clip_peak              |           0.373 |                0.308 |            nan |
+| experiment     | run_name                               | dataset      | split_kind   | cues   | model            | aggregation            |   test_clip_acc |   test_clip_macro_f1 |   val_clip_acc |
+|:---------------|:---------------------------------------|:-------------|:-------------|:-------|:-----------------|:-----------------------|----------------:|---------------------:|---------------:|
+| 03_diagnostics | old__masking_sweep                     | old          | people       | real   | attention_vs_mlp | window_vote            |        nan      |             nan      |            nan |
+| 03_diagnostics | old__window_sweep                      | old          | people       | real   | attention_fusion | window                 |        nan      |             nan      |            nan |
+| 03_diagnostics | classroom__rules_oracle                | final        | scenarios    | oracle | rule_based       | clip_mean_4s           |          0.9    |             nan      |            nan |
+| 03_diagnostics | classroom__fusion_oracle               | final        | scenarios    | oracle | attention_fusion | clip_mean_4s           |          0.5    |             nan      |            nan |
+| 03_diagnostics | classroom__rules_real                  | final        | scenarios    | real   | rule_based       | clip_mean_4s           |          0.494  |               0.473  |            nan |
+| 03_diagnostics | classroom__fusion_real                 | final        | scenarios    | real   | attention_fusion | clip_mean_4s           |          0.325  |               0.242  |            nan |
+| 03_diagnostics | clipvswin__train_window_vote           | final        | scenarios    | real   | attention_fusion | window_vote            |          0.342  |               0.284  |            nan |
+| 03_diagnostics | clipvswin__train_window_infer_clipmean | final        | scenarios    | real   | attention_fusion | window_train_clip_mean |          0.331  |               0.269  |            nan |
+| 03_diagnostics | clipvswin__train_window_infer_clipmax  | final        | scenarios    | real   | attention_fusion | window_train_clip_max  |          0.309  |               0.246  |            nan |
+| 03_diagnostics | clipvswin__clip_mean                   | final        | scenarios    | real   | attention_fusion | clip_mean              |          0.374  |               0.32   |            nan |
+| 03_diagnostics | clipvswin__clip_max                    | final        | scenarios    | real   | attention_fusion | clip_max               |          0.338  |               0.289  |            nan |
+| 03_diagnostics | clipvswin__clip_peak                   | final        | scenarios    | real   | attention_fusion | clip_peak              |          0.373  |               0.308  |            nan |
+| 03_diagnostics | final_merged__unimodal_emotion         | final_merged | scenarios    | real   | emotion          | clip_mean_window       |          0.7742 |               0.7257 |            nan |
+| 03_diagnostics | final_merged__unimodal_gesture         | final_merged | scenarios    | real   | gesture          | clip_mean_window       |          0.8043 |               0.802  |            nan |
+| 03_diagnostics | final_merged__unimodal_motion          | final_merged | scenarios    | real   | motion           | clip_mean_window       |          0.6624 |               0.5944 |            nan |
+| 03_diagnostics | final_merged__unimodal_context         | final_merged | scenarios    | real   | context          | clip_mean_window       |          0.96   |               0.3894 |            nan |
+| 03_diagnostics | final_merged__unimodal_emotion         | final_merged | scenarios    | real   | emotion          | clip_mean_window       |          0.7742 |               0.7257 |            nan |
+| 03_diagnostics | final_merged__unimodal_gesture         | final_merged | scenarios    | real   | gesture          | clip_mean_window       |          0.8043 |               0.802  |            nan |
+| 03_diagnostics | final_merged__unimodal_motion          | final_merged | scenarios    | real   | motion           | clip_mean_window       |          0.6624 |               0.5944 |            nan |
+| 03_diagnostics | final_merged__unimodal_context         | final_merged | scenarios    | real   | context          | clip_mean_window       |          0.96   |               0.3894 |            nan |
+| 03_diagnostics | final_merged__rules_oracle             | final_merged | scenarios    | oracle | rule_based       | clip_mean              |          0.9043 |               0.868  |            nan |
+| 03_diagnostics | final_merged__rules_real               | final_merged | scenarios    | real   | rule_based       | clip_mean              |          0.5633 |               0.5316 |            nan |
+| 03_diagnostics | final_merged__fusion_oracle            | final_merged | scenarios    | oracle | attention_fusion | clip_mean              |          0.6202 |               0.5247 |            nan |
+| 03_diagnostics | final_merged__fusion_real              | final_merged | scenarios    | real   | attention_fusion | clip_mean              |          0.4663 |               0.3927 |            nan |
+| 03_diagnostics | final_merged__rules_oracle             | final_merged | scenarios    | oracle | rule_based       | clip_mean              |          1      |               0.9    |            nan |
+| 03_diagnostics | final_merged__rules_real               | final_merged | scenarios    | real   | rule_based       | clip_mean              |          0.6042 |               0.5411 |            nan |
+| 03_diagnostics | final_merged__fusion_oracle            | final_merged | scenarios    | oracle | attention_fusion | clip_mean              |          0.6202 |               0.5247 |            nan |
+| 03_diagnostics | final_merged__fusion_real              | final_merged | scenarios    | real   | attention_fusion | clip_mean              |          0.4663 |               0.3927 |            nan |
+
+## 04_recombination
+
+| experiment       | run_name                  | dataset      | split_kind   | cues   | model            | aggregation   |   test_clip_acc |   test_clip_macro_f1 |   val_clip_acc |
+|:-----------------|:--------------------------|:-------------|:-------------|:-------|:-----------------|:--------------|----------------:|---------------------:|---------------:|
+| 04_recombination | final_merged__plain       | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4663 |               0.3927 |            nan |
+| 04_recombination | final_merged__augmented   | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4832 |               0.3904 |            nan |
+| 04_recombination | final_merged__recomb_only | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5772 |               0.4955 |            nan |
+| 04_recombination | final_merged__full        | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5872 |               0.502  |            nan |
+| 04_recombination | final_merged__plain       | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4663 |               0.3927 |            nan |
+| 04_recombination | final_merged__augmented   | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4832 |               0.3904 |            nan |
+| 04_recombination | final_merged__recomb_only | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5922 |               0.5071 |            nan |
+| 04_recombination | final_merged__full        | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5879 |               0.5048 |            nan |
+| 04_recombination | final_merged__plain       | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4663 |               0.3927 |            nan |
+| 04_recombination | final_merged__augmented   | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.4832 |               0.3904 |            nan |
+| 04_recombination | final_merged__recomb_only | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5772 |               0.4955 |            nan |
+| 04_recombination | final_merged__full        | final_merged | scenarios    | real   | attention_fusion | clip_mean     |          0.5872 |               0.502  |            nan |

@@ -1,0 +1,63 @@
+{
+  "ceiling": {
+    "n_colliding_tuples": 0,
+    "clip_weighted_ceiling": 1.0,
+    "n_clips": 2869
+  },
+  "rules_oracle": {
+    "full_test": {
+      "n": 1003,
+      "acc": 1.0,
+      "macro_f1": 0.9
+    },
+    "headline_test": {
+      "n": 979,
+      "acc": 1.0,
+      "macro_f1": 0.9
+    }
+  },
+  "rules_real": {
+    "full_test": {
+      "n": 1003,
+      "acc": 0.6949,
+      "macro_f1": 0.6282
+    },
+    "headline_test": {
+      "n": 979,
+      "acc": 0.712,
+      "macro_f1": 0.6414
+    }
+  },
+  "fusion_oracle": {
+    "full_test": {
+      "acc_mean": 0.6202,
+      "acc_std": 0.0578,
+      "macro_f1_mean": 0.5247,
+      "macro_f1_std": 0.0739,
+      "n": 1003
+    },
+    "headline_test": {
+      "acc_mean": 0.619,
+      "acc_std": 0.0484,
+      "macro_f1_mean": 0.5143,
+      "macro_f1_std": 0.0648,
+      "n": 979
+    }
+  },
+  "fusion_real": {
+    "full_test": {
+      "acc_mean": 0.5344,
+      "acc_std": 0.0245,
+      "macro_f1_mean": 0.433,
+      "macro_f1_std": 0.0225,
+      "n": 1003
+    },
+    "headline_test": {
+      "acc_mean": 0.5475,
+      "acc_std": 0.0251,
+      "macro_f1_mean": 0.438,
+      "macro_f1_std": 0.0228,
+      "n": 979
+    }
+  }
+}
