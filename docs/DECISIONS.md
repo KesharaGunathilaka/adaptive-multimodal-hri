@@ -1,5 +1,21 @@
 # DECISIONS — one-line rationale log (append-only, newest first)
 
+- **2026-08-03 [WIN-3060]** `scripts/29_merged_gap_decomposition.py`'s `rule_predict` remaps a
+  predicted F09 → F01 for `data/final_merged` only. Diagnosed: the shared
+  `fusion/baselines/rule_based.py::rule_intent()` still has a `wave+walking+non-happy→F09`
+  branch, correct for `data/old` (which has F09) but dead/wrong for the merged table (F09
+  folded into F01). This single branch was the ENTIRE 0.098 shortfall between rules+oracle and
+  the 1.0 ceiling (rows #22, #61, 96/979 headline clips) — confirmed by remapping alone taking
+  rules+oracle from 0.902 to exactly 1.000. Not applied to the shared `rule_intent()` since
+  `data/old`'s baseline still needs the F09 branch.
+- **2026-08-03 [WIN-3060]** Oracle-cue construction fixed to give masked cues a REASONED
+  default (emotion→Neutral, gesture→idle, motion→standing — the V3 table's own stated safe
+  fallback) rather than `argmax` of an all-zero one-hot vector (which silently picks class
+  index 0, e.g. "Surprise" for emotion — arbitrary, not a design choice). Verified this dataset's
+  masked-emotion rows never combine with `gesture=both_hands_up` (the only branch where the two
+  approaches would diverge), so it did not change this run's numbers, but is the correct
+  contract going forward.
+
 - **2026-08-03 [WIN-3060] (user)** Headline test metrics exclude row #58's 24 derived
   clips (`headline_eval=False` in splits.csv): they are row #49's TRAIN footage re-used
   with emotion+gesture masked, and the mask flips the intent F01→F06. #58's own 19

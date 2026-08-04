@@ -1,5 +1,385 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-08-04 (latest) — [WIN-3060] — Promotion complete: re-extraction + fusion retrain closes the loop
+
+**Did:** completed the 3-step plan from the previous entry.
+1. **Promoted** `finetuned_MobileNetV2_merged.pth`→`finetuned_MobileNetV2.pth` (emotion) and
+   `best_TCN_finetuned_merged.pth`→`best_TCN.pth` (gesture) as the deployed checkpoints (backed up
+   originals as `*_pre_merged_backup.pth`); synced `jetson_deploy/` copies; regenerated
+   `docs/checkpoint_manifest.sha256` (7/7 `OK`). Motion left untouched (see prior entry — 4/4
+   fine-tune attempts regressed).
+2. **Refreshed emotion's per-frame cache** (`scripts/37_refresh_emotion_cache.py`) — emotion's
+   Pass-1 cache stores model *output* (`emotion_probs`), not raw features, so pointing
+   `WindowFeaturizer` at the new checkpoint (sufficient for gesture, which caches raw keypoints)
+   would NOT pick up the fine-tune; had to fully re-decode all 2869 clips and re-run face
+   detection + the new checkpoint per-frame. 2869/2869 refreshed, 0 failures (~50 min).
+3. **Rebuilt** `unimodal_windows.parquet` (`scripts/28_merged_unimodal_eval.py --rebuild-windows`)
+   with both promoted checkpoints — confirms the fine-tunes took effect (emotion/gesture numbers
+   moved, motion/context unchanged as expected).
+4. **Re-ran gap decomposition** (`scripts/29_merged_gap_decomposition.py`) and the **recombination
+   fusion ablation** (`scripts/30_merged_recombination.py`, unchanged 4-way config,
+   `n_per_combo=100`) on the refreshed features.
+
+**Result — the unimodal gains reach the intent-prediction number.** Rules+real (the perception
+proxy) headline acc rose 0.608→**0.712** (macro-F1 →0.6414) purely from better emotion/gesture
+cues, no fusion retraining needed for that number. Fusion+real (plain, no recombination) rose
+0.475±0.034→**0.5475±0.025** in lockstep. Recombination's advantage is fully preserved on the
+refreshed features and the **`full` config now nearly matches/exceeds the new rules+real ceiling**
+(0.7191±0.016 acc vs 0.712 ceiling — the G1 claim holds even more cleanly than before, where `full`
+was still ~0.007 short of ceiling).
+
+| Config | Clip acc (headline, 3 seeds) | Clip macro-F1 |
+|---|---|---|
+| plain | 0.5475 ± 0.025 | 0.438 ± 0.023 |
+| augmented | 0.5264 ± 0.027 | 0.4267 ± 0.037 |
+| recomb_only | 0.7085 ± 0.008 | 0.6147 ± 0.009 |
+| **full** | **0.7191 ± 0.016** | **0.6241 ± 0.023** |
+
+Gap decomposition breakdown (headline): ceiling 1.0, rules+oracle 1.0 (still exact), fusion+oracle
+0.619±0.048 (essentially unchanged — oracle-cue generalisation gap is a fusion-model property, not
+a perception one), rules+real 0.712, fusion+real (plain) 0.5475. Generalisation cost
+(ceiling−oracle) stays 0.381; perception cost (oracle−real) shrank from the old baseline as
+expected since emotion/gesture perception improved.
+
+F02 (emergency) rows #23/#53/#54 remain the hardest — recombination lifts them to 0.36–0.66 mean
+hit rate (was 0%), consistent with the pre-promotion run; still the weakest intent class and worth
+flagging as a known limitation, not something this promotion cycle was expected to fix (gap
+decomposition shows oracle cues ALSO fail on these rows — it's a fusion-generalisation problem,
+not a perception one).
+
+**All artifacts regenerated:** `results/realworld_eval_merged/UNIMODAL_final_merged.md`,
+`GAP_DECOMPOSITION_MERGED.md`, `RECOMBINATION.md`; MLflow runs logged under `03_diagnostics`
+(gap decomposition + recombination configs) and `02_fusion` (already had the emotion/gesture
+fine-tune runs from the previous entries).
+
+**This closes the "fine-tune uni models on complete dataset → promote → propagate to fusion"
+pipeline the user requested.** Final combined numbers reported to user in-chat.
+
+
+## 2026-08-04 (later still) — [WIN-3060] — Motion retry (loss-only) also fails: the sampler hypothesis is wrong
+
+**Did:** retried motion fine-tuning with the `WeightedRandomSampler` REMOVED (class-weighted
+loss only, matching emotion/gesture exactly), warm-started from deployed, selecting on val
+macro-F1. Discovered while editing: the ORIGINAL script had the sampler AND class-weighted loss
+**simultaneously** — double-correcting the imbalance, more aggressive than either alone, and
+worse than I'd realised when proposing the retry.
+
+**Result: still a regression on test.**
+| Metric | Deployed | Sampler+loss (first attempt) | Loss-only (this attempt) |
+|---|---|---|---|
+| Headline test acc | 0.665 | 0.560 | **0.561** |
+| Headline test macro-F1 | 0.589 | 0.487 | **0.491** |
+| `raw_take` acc | 0.635 | 0.536 | **0.538** |
+
+Essentially identical to the sampler-based result. **This overturns the loss-weighting
+hypothesis for motion specifically** — across 4 combinations now (2 warm-starts × 2 balancing
+strategies), motion fine-tuning regresses on genuine test performance every time, while val
+accuracy is consistently ~80%+ in all 4. The common factor is not the sampler; it is that
+motion's actor-disjoint val set (P03+P04, same scenarios as train) does not predict test
+performance (new scenarios, mostly different actors) — a scenario-generalisation gap specific
+to this modality, not a training-recipe bug.
+
+**Decision: motion is NOT promoted.** Deployed `best_model_finetuned.pt` stays authoritative.
+Documented as a genuine negative result with strong replication (4/4 attempts failed
+consistently) — worth keeping in the thesis as evidence that "more real data, same recipe"
+does not universally help, unlike emotion and gesture where it clearly did.
+
+**Final verdict, all three unimodal fine-tunes:**
+| Model | Promoted? | Headline test delta |
+|---|---|---|
+| Emotion | ✅ yes | +0.093 acc / +0.081 F1 |
+| Gesture | ✅ yes | +0.101 acc / +0.094 F1 |
+| Motion | ❌ no (kept deployed) | −0.10 to −0.14 acc across 4 attempts |
+
+**Next:** promote emotion+gesture checkpoints (update `checkpoint_manifest.sha256`), re-run
+Pass-1/2 extraction with the promoted checkpoints, retrain fusion (incl. the validated
+recombination approach) on the refreshed features, and report the final combined numbers.
+
+
+## 2026-08-04 (later) — [WIN-3060] — Gesture fine-tune on complete dataset: also a clean win
+
+**Did:** `scripts/36_finetune_gesture.py` — warm-started from deployed `best_TCN.pth`,
+class-weighted loss (gesture's own original recipe already does this, no change needed), lr
+1e-4, 46 epochs to early-stop, selecting on val macro-F1. Evaluated via
+`scripts/32_refresh_and_compare.py --gesture-ckpt ...` (full windowed pipeline, test-split-only
+comparison).
+
+**Result — real improvement, third data point confirming the pattern:**
+| Metric | Deployed | Fine-tuned | Delta |
+|---|---|---|---|
+| Headline test acc | 0.763 | **0.864** | +0.101 |
+| Headline test macro-F1 | 0.741 | **0.836** | +0.094 |
+| `raw_take` (genuinely unseen) acc | 0.738 | **0.856** | +0.118 |
+| `curated_clip` acc | 0.96 | 0.93 | −0.03 |
+
+**Per-class:** `wave` (the worst class before, 0.47) is now **perfect (1.00)**. `beckoning`
+0.61→0.95, `point` 0.68→0.78, `thumbs_down` 0.90→0.97. Two mild regressions: `idle` 0.99→0.85,
+`thumbs_up` 0.89→0.85. **`raise_hand` remains the persistent weak spot, still worst-in-class**
+(0.37→0.33 — essentially unchanged) — likely still confused with `wave` per the earlier
+confusion matrix; a genuine open item, not fixed by this fine-tune. Both contexts improved
+(classroom 0.74→0.85, kitchen 0.79→0.88).
+
+**Confirms the loss-weighting hypothesis a third time.** All three fine-tunes now on record:
+emotion (class-weighted loss) +9.3pts headline, gesture (class-weighted loss) +10.1pts headline,
+motion (`WeightedRandomSampler`) −13.7pts headline (regression, both warm-starts). The pattern
+is consistent enough to treat as a real finding, not noise: **class-weighted loss generalises;
+resampling/duplicating minority-class examples overfits to this dataset's narrow
+(2-actor, same-scenario) validation set.**
+
+**Minor script bug fixed:** `classification_report` crashed on a val batch missing one gesture
+class (needs explicit `labels=range(8)`) — crashed AFTER the checkpoint saved, so no data lost;
+fixed for future runs, this run's MLflow entry logged post-hoc.
+
+**Status of all three fine-tunes (none promoted to deployed yet):**
+| Model | Verdict | Checkpoint |
+|---|---|---|
+| Emotion | ✅ promote | `finetuned_MobileNetV2_merged.pth` |
+| Gesture | ✅ promote | `best_TCN_finetuned_merged.pth` |
+| Motion | ❌ do not promote (regressed); deployed checkpoint stays | `best_model_finetuned_merged_{ntu,deployed}.pt` kept as evidence only |
+
+**Next:** decide on promoting emotion+gesture to deployed (updates `checkpoint_manifest.sha256`,
+requires re-running Pass-1/2 extraction + re-training fusion on the refreshed features);
+optionally retry motion with class-weighted loss instead of the sampler, now that the pattern
+is well-evidenced, before writing it off entirely.
+
+
+## 2026-08-04 — [WIN-3060] — Emotion fine-tune on complete dataset: a genuine win (unlike motion)
+
+**Did:** `scripts/33_extract_emotion_crops.py` — new pass caching up to 15 evenly-spaced
+face-crop IMAGES per clip (all 2,869 clips, 0 failures, ~0.37 clips/s once warmed) — needed
+because Pass-1's per-frame cache only stored emotion_probs (the OLD model's output), not the
+input crops. `scripts/34_finetune_emotion.py` — warm-started from the DEPLOYED checkpoint,
+**class-WEIGHTED loss** (not resampling — deliberately avoiding the mechanism suspected of
+causing motion's regression), lr 3e-5, label smoothing 0.1, selecting on val macro-F1.
+`scripts/35_compare_emotion.py` — evaluates old vs new checkpoint on the IDENTICAL cached test
+crops (isolates the checkpoint as the only variable — the methodology fix from the motion
+comparison).
+
+**Result — real improvement, confirmed on genuinely unseen test clips:**
+| Metric | Deployed | Fine-tuned | Delta |
+|---|---|---|---|
+| Headline test acc | 0.681 | **0.775** | +0.093 |
+| Headline test macro-F1 | 0.587 | **0.668** | +0.081 |
+| `raw_take` (genuinely unseen) acc | 0.644 | **0.762** | **+0.118** |
+| `curated_clip` (data/old overlap) acc | 0.96 | 0.87 | −0.09 (expected — less memorisation, more generalisation) |
+
+**Per-class — fixes exactly the two weakest classes identified in the 2026-08-03 unimodal
+audit:** Fear 0.42→0.81 (+0.39), Disgust 0.39→0.78 (+0.39). Both contexts improved (classroom
+0.63→0.75, kitchen 0.72→0.80). One regression: Neutral 0.79→0.60 (−0.19) — expected trade-off,
+Neutral got the lowest loss weight (0.31, vs Surprise's 2.31) to force attention onto the
+minority classes.
+
+**Why this worked where motion didn't (the key methodological lesson):** emotion used
+class-WEIGHTED LOSS; motion used a `WeightedRandomSampler` (exact-duplicate oversampling of the
+rarest class). Two data points now point the same direction — loss-weighting is the safer
+intervention for this dataset's actor/scenario-narrow val set. Also notable: emotion's val
+macro-F1 peaked at epoch 1 and declined every epoch after (early-stop correctly kept epoch 1),
+whereas the FINAL/kept checkpoint still generalised to test — unlike motion where a good val
+score at epoch 9+ did not transfer at all.
+
+**Checkpoint:** `modalities/emotion/checkpoints/finetuned_MobileNetV2_merged.pth` — NOT YET
+promoted to deployed (`finetuned_MobileNetV2.pth`); promote after gesture is also checked, per
+user's plan to review all three together before finalising.
+
+**Next:** gesture fine-tune (`scripts/36_finetune_gesture.py`, same class-weighted-loss approach,
+already gesture's own original recipe).
+
+
+## 2026-08-03 (latest) — [WIN-3060] — Rubric-driven cue recombination: recovers 95% of the fusion-generalisation gap
+
+**Did:** built and ran the recombination experiment the gap decomposition pointed at.
+- Refactored shared gap-decomposition logic (REAL/ORACLE table construction, the rule
+  baseline incl. its F09→F01 remap and missing-cue defaults, ceiling check) out of script 29
+  into `scripts/realworld_eval/merged_gap.py`, so script 30 reuses it instead of duplicating.
+- `fusion/model/recombine_merged.py`: generates synthetic training samples spanning **all
+  448** context(2)×emotion(7)×gesture(8)×motion(4) combinations — not a curated row list like
+  `data/old`'s `recombine.py`. Each combo is labelled via the shared `rule_intent()` (with the
+  F09→F01 remap). Two deliberate departures from the `data/old` version, both documented in
+  the module docstring: (1) pools are indexed by **ground-truth class**, not the model's own
+  argmax (the old approach self-selects vectors the model already gets "right" and
+  under-represents confusable cases); (2) full combinatorial span, which explicitly includes
+  every F02 (emergency) combination — the specific gap the safety finding demanded.
+- `scripts/30_merged_recombination.py`: 4-way ablation isolating recombination's contribution
+  from dropout/jitter's — `plain` / `augmented` (dropout+jitter only) / `recomb_only`
+  (recombination only) / `full` (both) — 3 seeds each, on the same headline test protocol as
+  the gap decomposition.
+
+**Results (headline test, 3 seeds, n_per_combo=100 → 44,800 synthetic samples):**
+| Config | Clip acc | macro-F1 |
+|---|---|---|
+| plain (reproduces gap decomposition's fusion+real) | 0.475 ± 0.034 | 0.395 |
+| augmented (dropout+jitter, no recombination) | 0.489 ± 0.036 | 0.390 |
+| recomb_only (recombination, no dropout/jitter) | 0.590 ± 0.013 | 0.502 |
+| **full (recombination + dropout+jitter)** | **0.601 ± 0.003** | **0.508** |
+
+Reference: rules+real = 0.608 (the number learned fusion needs to beat for G1 to hold on
+unseen combinations); rules+oracle / ceiling = 1.000.
+
+**Recombination recovers 95% of the gap** ((0.601−0.475)/(0.608−0.475) = 0.947) and gets
+**tighter, not just better** — seed std drops from ±0.034 (plain) to ±0.003 (full), the most
+stable fusion config measured yet. It does **not** quite cross rules+real (0.601 vs 0.608, a
+0.007 gap — within measurement noise of a single seed but the deterministic rule number has no
+variance to compare against). Recombination alone (no dropout/jitter) already gets most of the
+way (0.590); dropout/jitter's marginal contribution on top of recombination is smaller than its
+contribution alone (0.475→0.489) — the two are not simply additive, recombination subsumes
+most of what dropout/jitter buys standalone.
+
+**Sensitivity check**: tried n_per_combo=250 (112,000 synthetic samples) — mean headline acc
+similar (~0.602) but **seed variance nearly doubled** (±0.025 vs ±0.003). n_per_combo=100 is
+the better operating point: more synthetic data did not help and cost stability. Reverted to
+100 as the canonical/saved config.
+
+**F02 (emergency) rows #23/#53/#54 — the safety check the whole experiment was aimed at:**
+| Row | Before (fusion+oracle, gap decomposition) | After (full config, real cues) |
+|---|---|---|
+| #23 | 0% (fails even with PERFECT cues) | 47.7% (44 clips) |
+| #53 | 0% | 66.7% (39 clips) |
+| #54 | 0% | 71.1% (38 clips) |
+
+Large, real recovery on the exact rows the gap decomposition flagged as unreachable by
+perception fixes alone — direct evidence the fusion-generalisation diagnosis was correct and
+that recombination is the right lever. Not yet reliable enough for a safety-critical claim
+(#23 still <50%), but this is now a tuning/coverage problem, not an architectural dead end.
+
+**Logged:** 12 MLflow runs across 3 script invocations (n=100 canonical run before and after
+the n=250 sensitivity check) to `04_recombination`, exported to `results/EXPERIMENTS.csv`
+(51 runs total across all 4 experiments). Artifacts: `results/realworld_eval_merged/
+{RECOMBINATION.md, recombination_report.json, recombination_results.json}`.
+
+**Next:** the 0.007 shortfall vs rules+real is close enough that a few candidate next steps
+could close it — per-intent-class n_per_combo weighting (F10/F08 are thin: 800/1,600 samples
+vs F01's 10,400), longer patience, or ensembling seeds. Re-run the exact gap-decomposition
+oracle/real comparison with the `full`-config model to get an updated, apples-to-apples
+generalisation-cost number (this run only measured against the OLD gap-decomposition baseline
+numbers, not a fresh oracle re-run on this model).
+
+
+## 2026-08-03 (latest) — [WIN-3060] — Full-dataset gap decomposition: confirms classroom finding, exposes F02 as a fusion problem
+
+**Did:** `scripts/29_merged_gap_decomposition.py` — extended
+`results/realworld_eval_final/GAP_DECOMPOSITION.md` (classroom-only) to the complete
+`data/final_merged` (both contexts, all 62 V3 rows, 2,869 clips). Same protocol: clip-level,
+4s mean-pooled, actor-disjoint val, plain fusion (no augmentation), 3 seeds.
+
+**Ceiling is 1.0, not 0.900** — confirmed computationally (0 colliding cue tuples at the
+intent level; F09's removal deleted the classroom direction collision that capped the old
+table). This is a materially easier ceiling than the classroom-only study used.
+
+**Bug found and fixed before trusting any number:** `rules+oracle` (perfect cues) scored
+0.902, not the expected 1.0. Root-caused to a SINGLE dead branch: `rule_based.py`'s
+`wave+walking+non-happy→F09` logic is correct for `data/old` (still has F09) but wrong here
+(F09 was folded into F01). Diagnosed precisely — rows #22 and #61 only, 96/979 headline
+clips, both 0% before the fix — confirmed by adding a table-specific F09→F01 remap (in the
+script, not the shared baseline) which took rules+oracle to **exactly 1.000**. Also fixed a
+second, non-impactful bug in oracle construction: masked cues were defaulting to class index 0
+via `argmax` of an all-zero vector (e.g. emotion silently “Surprise”) instead of a reasoned
+safe default (Neutral/idle/standing, per the table's own stated fallback) — verified this
+dataset's masked-emotion rows never hit the one branch where it would have mattered, but it is
+now the correct contract.
+
+**Final headline numbers (test split, excl. #58's 24 derived clips):**
+| Configuration | Clip acc | macro-F1 |
+|---|---|---|
+| Rules + oracle cues | **1.000** | 0.900 |
+| Fusion + oracle cues | 0.619 ± 0.048 | 0.514 |
+| Rules + real cues | 0.608 | 0.542 |
+| Fusion + real cues | 0.475 ± 0.034 | 0.395 |
+
+**Decomposition: fusion generalisation cost 0.381 (dominant) vs perception cost 0.144.**
+Directly confirms the classroom-only finding (there: 0.40 vs 0.175) on the complete,
+two-context dataset — the bottleneck is the learned model's inability to generalise the
+rubric to unseen cue combinations, not the perception models. **Rules still beat fusion on
+real cues** (0.608 vs 0.475), an even clearer margin in relative terms than classroom-only.
+
+**New this run — real seed variance on fusion+oracle** (0.556–0.673, ±0.048), unlike the
+classroom study's exact ±0.000. With kitchen's extra rows and tuple diversity, different
+random inits now partially recover different parts of the compositional structure instead of
+collapsing identically. Worth a closer look — possibly informative about what the successful
+seed's decision boundary looks like.
+
+**Safety-relevant finding — F02 moved from “perception problem” to “mostly fusion
+problem”.** Per-row diagnosis (`results/realworld_eval_merged/gap_per_row_merged.csv`): rows
+**#23, #53, #54 (all F02, emergency) fail EVEN WITH PERFECT ORACLE CUES.** This changes the
+prioritisation from the earlier unimodal-eval session, which found F02 rows scoring 0% on
+emotion/motion and read that as a perception gap — the oracle test shows perfect perception on
+those rows *still* wouldn't fix F02 detection with the current fusion training. Fine-tuning
+emotion/motion alone will not close this; it needs the same fix as the rest of the
+generalisation gap (rubric-driven recombination), with F02 rows a priority inclusion given the
+safety stakes.
+
+Logged: 4 new runs to MLflow `03_diagnostics` (`final_merged__rules_oracle/real`,
+`final_merged__fusion_oracle/real`), exported to `results/EXPERIMENTS.csv` (39 runs total).
+Artifacts: `results/realworld_eval_merged/{GAP_DECOMPOSITION_MERGED.md,
+gap_decomposition_merged.json, gap_per_row_merged.csv}`.
+
+**Next:** rubric-driven cue recombination — the lever both this and the classroom study point
+at. Design must explicitly include F02 combinations given the finding above. Re-run this exact
+decomposition afterward on the same table to confirm the 0.381 gap actually closes.
+
+
+## 2026-08-03 (later still) — [WIN-3060] — `data/final_merged` extracted & scored: complete dataset
+
+**Did:** full Pass 1 + Pass 2 over the complete, corrected dataset (2,869 usable clips, all
+62 V3 rows, both contexts, all views).
+- `scripts/27_merged_extract.py` — Pass 1, with sha256-verified cache reuse from
+  `data/final` (safety check: `n_frames` + `fps` must match `clips.csv`, or re-extract —
+  guards against the R4 re-encoding). **1,500 reused / 1,369 fresh, 0 failures.** Smoke-tested
+  both paths (reuse and fresh `.MOV` extraction) before the full run.
+- `scripts/realworld_eval/merged_unimodal.py` + `scripts/28_merged_unimodal_eval.py` — Pass 2
+  + evaluation, mirroring `final_unimodal.py`/`16_final_unimodal_eval.py` but reading the new
+  `split`/`headline_eval`/`resolution_class` columns from `23_build_splits.py` instead of raw
+  `view`/`split_design`. **41,144 windows** written to `unimodal_windows.parquet`.
+- **Bug caught before the numbers were trusted:** first run's "headline" metric filtered on
+  `headline_eval` alone, which is True by default for train/val rows too (it only ever turns
+  False for row #58's 24 clips) — so it silently included training data and read
+  emotion=0.77/motion=0.66 acc, an inflated number. Fixed to require `split=='test' AND
+  headline_eval` — corrected headline: **emotion 0.674, gesture 0.763, motion 0.665,
+  context 0.971** (n=856–979). Logged to MLflow (`03_diagnostics`) and exported to
+  `results/EXPERIMENTS.csv`.
+
+**Headline held-out numbers, complete dataset (test split, excl. #58's derived clips):**
+| Modality | clip acc | macro-F1 |
+|---|---|---|
+| emotion | 0.674 | 0.581 |
+| gesture | 0.763 | 0.741 |
+| motion | 0.665 | 0.589 |
+| context | 0.971 | 0.492 (near-perfect acc; low F1 = occasional hallucinated hospital/museum) |
+
+Matches the classroom-only numbers in `ASSESSMENT.md` closely (emotion 0.643, gesture 0.766,
+motion 0.637) — kitchen does not change the picture much on its own.
+
+**Two findings that matter more than the headline table:**
+1. **The T03 honesty problem is now confirmed dataset-wide, not just classroom.** Every
+   designed-missing row (`docs/methodology/04_missing_cues.md` §4) shows **observation_rate =
+   1.0** — emotion, gesture AND context all fire 100% of the time on rows the table says
+   should be unobservable. T03 remains simulated (flag-driven) masking only; still true nothing
+   about the underlying pipeline has changed on this front.
+2. **F02 (emergency) rows are a systematic weak spot — safety-relevant.** Of 7 F02 rows
+   (#3,4,23,34,35,53,54), at least **4 score 0% on emotion and/or motion**
+   (#4 stepping_back→0, #23 Fear→0.068 recall region, #34/#35 stepping_back→0). Motion's
+   `stepping_back` recall is 0.243 overall (confusion: 150/404 → standing, 150/404 → walking)
+   — confirms and extends the 2026-07-16 kitchen-only finding to classroom F02 rows too.
+   Needs an oracle-cue check on F02 specifically before deciding whether this is a perception
+   problem or (as the classroom gap decomposition suggested) a fusion generalisation problem.
+
+**Held-out vs fine-tune-overlap (source column), full dataset:**
+| Modality | curated_clip (fine-tune-adjacent) acc | raw_take (unseen) acc |
+|---|---|---|
+| emotion | 0.961 | 0.642 |
+| gesture | 0.858 | 0.771 |
+| motion | 0.862 | 0.537 |
+| context | 0.973 | 0.952 |
+
+Confirms emotion and motion's `data/old`-derived numbers are inflated by fine-tune overlap;
+gesture and context show little gap (gesture's custom clips and context's zero-shot backend
+were never fit to this specific footage).
+
+**Next:** oracle-vs-real gap decomposition on the complete dataset (both contexts, all V3 rows)
+— the classroom-only version (`GAP_DECOMPOSITION.md`) found the bottleneck was fusion
+generalisation (0.40) not perception (0.175); worth re-confirming now kitchen is complete and
+before deciding on any unimodal fine-tuning. Then the rubric-driven recombination experiment.
+
+
 ## 2026-08-03 (later) — [WIN-3060] — MLflow experiment tracking
 
 **Did:** stood up MLflow with a storage model that mirrors the checkpoint manifest, so it

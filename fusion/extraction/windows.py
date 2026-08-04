@@ -42,13 +42,20 @@ def uniform_indices(n, target):
 
 
 class WindowFeaturizer:
-    def __init__(self, device=None, scale=1.0):
+    def __init__(self, device=None, scale=1.0, gesture_ckpt=None, motion_ckpt=None):
         """`scale` multiplies the gesture/motion lookback spans (window-size
         sweep, handover §8.3). Emotion/context spans and the stride stay fixed
-        — the sweep varies temporal context, not the output grid."""
+        — the sweep varies temporal context, not the output grid.
+
+        `gesture_ckpt`/`motion_ckpt` override the deployed checkpoint (default
+        GESTURE_CKPT/MOTION_CKPT) — used to refresh the feature cache after a
+        fine-tune without touching the deployed weights until they're compared.
+        """
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.ges_span = GES_SPAN * scale
         self.mot_span = MOT_SPAN * scale
+        gesture_ckpt = gesture_ckpt or GESTURE_CKPT
+        motion_ckpt = motion_ckpt or MOTION_CKPT
 
         # ── Gesture TCN (arch/labels pinned by model_config.json) ─────────
         gm = load_module("hri_gesture_models", GES_DIR / "src" / "models.py", [GES_DIR])
@@ -57,7 +64,7 @@ class WindowFeaturizer:
         self.ges_window = int(cfg["window"])
         self.ges_model = gm.build_model(cfg["model"], **cfg.get("model_kwargs", {}))
         self.ges_model.load_state_dict(
-            torch.load(GESTURE_CKPT, map_location=self.device, weights_only=True))
+            torch.load(gesture_ckpt, map_location=self.device, weights_only=True))
         self.ges_model.to(self.device).eval()
 
         # ── Motion LSTM (same load path as MotionInference) ───────────────
@@ -66,7 +73,7 @@ class WindowFeaturizer:
         self._mi = mi
         self.motion_labels = [mi.MOTION_LABELS[i] for i in range(mi.NUM_CLASSES)]
         self.mot_window = mi.WINDOW_SIZE
-        ckpt = torch.load(MOTION_CKPT, map_location=self.device, weights_only=True)
+        ckpt = torch.load(motion_ckpt, map_location=self.device, weights_only=True)
         mcfg = ckpt.get("config", {})
         self.mot_model = mi.MotionLSTM(
             hidden_size=mcfg.get("hidden_size", 256),
@@ -83,6 +90,42 @@ class WindowFeaturizer:
             for j in joints])                                   # [30,42]
         vel = np.vstack([np.zeros((1, 42), np.float32), np.diff(pos, axis=0)])
         return np.concatenate([pos, vel], axis=1).astype(np.float32)
+
+    def raw_training_windows(self, npz, which):
+        """Per-frame cache -> list of RAW (not model-run) window features, for
+        fine-tuning. `which` = 'motion' -> [30,84] pos+vel; 'gesture' ->
+        [32,185] keypoint features. Uses the IDENTICAL window-selection logic
+        as `featurize_clip` (same spans, same min-frame gate, same uniform
+        resampling) so a fine-tuned model trains on exactly the distribution
+        it will see at inference — train/serve skew here would silently cost
+        accuracy with no error message (see fusion/extraction/windows.py
+        module docstring's general warning on this)."""
+        fps = float(npz["fps"])
+        T = int(npz["n_frames"])
+        dur = T / fps
+        times = np.arange(T) / fps
+        pose_valid = npz["pose_valid"]
+        span = self.mot_span if which == "motion" else self.ges_span
+        min_frames = MOT_MIN_FRAMES if which == "motion" else GES_MIN_FRAMES
+        window = self.mot_window if which == "motion" else self.ges_window
+
+        first = max(self.ges_span, self.mot_span)
+        ends = np.arange(first, dur + 1e-9, STRIDE_SEC)
+        if len(ends) == 0:
+            ends = np.array([dur])
+
+        out = []
+        for t_end in ends:
+            m = (times > t_end - span) & (times <= t_end) & pose_valid
+            idx = np.flatnonzero(m)
+            if len(idx) < min_frames:
+                continue
+            sel = idx[uniform_indices(len(idx), window)]
+            if which == "motion":
+                out.append(self._motion_window_feats(npz["joints25"][sel]))
+            else:
+                out.append(npz["gesture_feats"][sel])
+        return out
 
     @torch.no_grad()
     def featurize_clip(self, npz):
