@@ -159,3 +159,49 @@ def rule_predict(tbl: pd.DataFrame) -> np.ndarray:
         preds.append(common.INTENTS.index(intent) if intent in common.INTENTS
                      else common.INTENTS.index("F05"))
     return np.array(preds)
+
+
+def rule_predict_fair(tbl: pd.DataFrame, use_predicted_context: bool) -> np.ndarray:
+    """`rule_predict` with the context source switchable -- 2026-08-06 Phase 1
+    robustness study (`scripts/43_robustness_battery.py`). `rule_predict`
+    always uses the clip's TRUE context (a fixed-installation assumption);
+    this variant can instead use the CLIP classifier's predicted context, to
+    measure whether that assumption gives rules an unfair edge over fusion
+    (which must infer context like any other cue). Kept separate from
+    `rule_predict` for the same reason the F09 remap lives in the calling
+    script and not in the shared `rule_based.py` -- existing call sites must
+    not change behaviour.
+
+    Predicted context is restricted to the two contexts this dataset actually
+    contains; the CLIP classifier's other three scene classes have no table
+    coverage here and picking one would be an artefact, not a prediction. An
+    unobserved context falls back to the clip's true room (matching the
+    original assumption) rather than adding a second, harsher penalty on top
+    of the one this function measures.
+    """
+    def pick(pref):
+        cols = [f"{pref}_{c}" for c in LABELS[pref]]
+        probs = tbl[cols].to_numpy()
+        obs = tbl[f"{pref}_obs"].to_numpy().astype(bool)
+        labels = np.array(LABELS[pref])[probs.argmax(1)]
+        return np.where(obs, labels, DEFAULT[pref])
+
+    emo, ges, mot = pick("emo"), pick("ges"), pick("mot")
+    if use_predicted_context:
+        two = ["classroom", "kitchen"]
+        sub = tbl[[f"ctx_{c}" for c in two]].to_numpy()
+        pred = np.array(two)[sub.argmax(1)]
+        obs = tbl["ctx_obs"].to_numpy().astype(bool)
+        ctx = np.where(obs, pred, tbl["context"].to_numpy())
+    else:
+        ctx = tbl["context"].to_numpy()
+
+    preds = []
+    for e, g, m, c in zip(emo, ges, mot, ctx):
+        e = "anger" if e == "Anger" else e.lower()
+        intent = rule_intent(e, g, m, c)
+        if intent == "F09":
+            intent = "F01"
+        preds.append(common.INTENTS.index(intent) if intent in common.INTENTS
+                     else common.INTENTS.index("F05"))
+    return np.array(preds)
