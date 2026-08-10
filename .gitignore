@@ -46,3 +46,4 @@ mlruns.db
 mlruns.db-journal
 
 report/
+/fusion/fusion-engine-embeddings
