@@ -1,0 +1,52 @@
+{
+  "n_seeds": 10,
+  "n_headline_clips": 979,
+  "substitution_stats": {
+    "n_filled": 3604,
+    "n_from_train_fallback": 200,
+    "n_no_pool_anywhere": 0
+  },
+  "rules": {
+    "real": {
+      "n": 979,
+      "acc": 0.712,
+      "macro_f1": 0.6414
+    },
+    "oracle_onehot": {
+      "n": 979,
+      "acc": 1.0,
+      "macro_f1": 0.9
+    },
+    "oracle_realistic": {
+      "n": 979,
+      "acc": 0.8233,
+      "macro_f1": 0.717
+    }
+  },
+  "fusion": {
+    "real": {
+      "acc_mean": 0.7133,
+      "acc_std": 0.0151,
+      "macro_f1_mean": 0.6146,
+      "macro_f1_std": 0.0201,
+      "n": 979
+    },
+    "oracle_onehot": {
+      "acc_mean": 0.9373,
+      "acc_std": 0.0216,
+      "macro_f1_mean": 0.7952,
+      "macro_f1_std": 0.0425,
+      "n": 979
+    },
+    "oracle_realistic": {
+      "acc_mean": 0.8176,
+      "acc_std": 0.0156,
+      "macro_f1_mean": 0.682,
+      "macro_f1_std": 0.0271,
+      "n": 979
+    }
+  },
+  "perception_band_realistic": 0.1043,
+  "perception_band_onehot": 0.224,
+  "generalisation_cost_realistic": 0.1824
+}

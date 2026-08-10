@@ -1,0 +1,37 @@
+{
+  "n_headline_clips": 979,
+  "n_seeds": 5,
+  "balance": "uniform",
+  "tuple_structure": {
+    "n_flipping_tuples": 24,
+    "n_tuples": 224,
+    "flip_gestures": [
+      "raise_hand"
+    ]
+  },
+  "flip_rows": {
+    "25": 52
+  },
+  "fusion": {
+    "acc_original": 0.7099,
+    "invariant_n": 927,
+    "invariant_unchanged": 0.9946,
+    "invariant_still_correct": 0.7303,
+    "flip_n": 52,
+    "flip_followed": 0.8269,
+    "flip_changed_at_all": 0.3077,
+    "flip_correct_before": 0.3077,
+    "flip_correct_both": 0.3077
+  },
+  "rules": {
+    "acc_original": 0.712,
+    "invariant_n": 927,
+    "invariant_unchanged": 1.0,
+    "invariant_still_correct": 0.7411,
+    "flip_n": 52,
+    "flip_followed": 0.4038,
+    "flip_changed_at_all": 0.1923,
+    "flip_correct_before": 0.1923,
+    "flip_correct_both": 0.1923
+  }
+}

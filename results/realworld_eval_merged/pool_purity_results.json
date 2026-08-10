@@ -1,0 +1,223 @@
+{
+  "ges": {
+    "finetuned_on_train": true,
+    "per_class": {
+      "idle": {
+        "train": 1.0,
+        "n": {
+          "train": 227,
+          "val": 70,
+          "test": 160
+        },
+        "val": 1.0,
+        "test": 0.85
+      },
+      "wave": {
+        "train": 1.0,
+        "n": {
+          "train": 187,
+          "val": 47,
+          "test": 144
+        },
+        "val": 1.0,
+        "test": 1.0
+      },
+      "point": {
+        "train": 1.0,
+        "n": {
+          "train": 114,
+          "val": 32,
+          "test": 95
+        },
+        "val": 1.0,
+        "test": 0.7789
+      },
+      "thumbs_up": {
+        "train": 1.0,
+        "n": {
+          "train": 54,
+          "test": 200
+        },
+        "val": null,
+        "test": 0.845
+      },
+      "thumbs_down": {
+        "train": 1.0,
+        "n": {
+          "train": 287,
+          "val": 55,
+          "test": 87
+        },
+        "val": 0.9818,
+        "test": 0.9655
+      },
+      "beckoning": {
+        "train": 1.0,
+        "n": {
+          "train": 193,
+          "val": 11,
+          "test": 87
+        },
+        "val": 1.0,
+        "test": 0.954
+      },
+      "raise_hand": {
+        "train": 1.0,
+        "n": {
+          "train": 136,
+          "val": 30,
+          "test": 52
+        },
+        "val": 1.0,
+        "test": 0.3269
+      },
+      "both_hands_up": {
+        "train": 1.0,
+        "n": {
+          "train": 211,
+          "val": 50,
+          "test": 52
+        },
+        "val": 1.0,
+        "test": 0.9808
+      }
+    },
+    "overall": {
+      "train": 1.0,
+      "val": 0.9966,
+      "test": 0.8643
+    },
+    "train_minus_test": 0.1357
+  },
+  "emo": {
+    "finetuned_on_train": true,
+    "per_class": {
+      "Surprise": {
+        "train": 1.0,
+        "n": {
+          "train": 60,
+          "val": 12
+        },
+        "val": 1.0,
+        "test": null
+      },
+      "Fear": {
+        "train": 1.0,
+        "n": {
+          "train": 76,
+          "val": 18,
+          "test": 121
+        },
+        "val": 1.0,
+        "test": 0.7273
+      },
+      "Disgust": {
+        "train": 0.9609,
+        "n": {
+          "train": 179,
+          "val": 52,
+          "test": 90
+        },
+        "val": 0.3654,
+        "test": 0.8111
+      },
+      "Happy": {
+        "train": 0.9788,
+        "n": {
+          "train": 236,
+          "val": 23,
+          "test": 144
+        },
+        "val": 0.913,
+        "test": 0.7292
+      },
+      "Sad": {
+        "train": 0.9851,
+        "n": {
+          "train": 336,
+          "val": 60,
+          "test": 218
+        },
+        "val": 0.6167,
+        "test": 0.7294
+      },
+      "Anger": {
+        "train": 0.9886,
+        "n": {
+          "train": 175,
+          "val": 59,
+          "test": 150
+        },
+        "val": 0.9831,
+        "test": 0.9533
+      },
+      "Neutral": {
+        "train": 0.9034,
+        "n": {
+          "train": 445,
+          "val": 83,
+          "test": 133
+        },
+        "val": 0.7952,
+        "test": 0.6316
+      }
+    },
+    "overall": {
+      "train": 0.9589,
+      "val": 0.7524,
+      "test": 0.7617
+    },
+    "train_minus_test": 0.1972
+  },
+  "mot": {
+    "finetuned_on_train": false,
+    "per_class": {
+      "sitting": {
+        "train": 0.8987,
+        "n": {
+          "train": 632,
+          "val": 92,
+          "test": 243
+        },
+        "val": 0.8478,
+        "test": 0.7078
+      },
+      "standing": {
+        "train": 0.4268,
+        "n": {
+          "train": 396,
+          "val": 114,
+          "test": 196
+        },
+        "val": 0.4737,
+        "test": 0.648
+      },
+      "walking": {
+        "train": 0.7459,
+        "n": {
+          "train": 307,
+          "val": 65,
+          "test": 418
+        },
+        "val": 0.8308,
+        "test": 0.8373
+      },
+      "stepping_back": {
+        "train": 0.219,
+        "n": {
+          "train": 210,
+          "val": 48,
+          "test": 146
+        },
+        "val": 0.5833,
+        "test": 0.1644
+      }
+    },
+    "overall": {
+      "train": 0.655,
+      "val": 0.6708,
+      "test": 0.671
+    },
+    "train_minus_test": -0.016
+  }
+}

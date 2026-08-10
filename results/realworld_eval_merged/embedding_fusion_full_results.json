@@ -1,0 +1,109 @@
+{
+  "n_seeds": 10,
+  "n_components": 32,
+  "n_headline_clips": 979,
+  "rules": {
+    "n": 979,
+    "acc": 0.712,
+    "macro_f1": 0.6414
+  },
+  "results": {
+    "probs_full": {
+      "modality_dims": {
+        "emotion": 7,
+        "gesture": 8,
+        "motion": 4,
+        "context": 5
+      },
+      "acc": {
+        "mean": 0.6992900000000001,
+        "std": 0.013497444202514766,
+        "ci95_low": 0.6896345100767775,
+        "ci95_high": 0.7089454899232227
+      },
+      "macro_f1": {
+        "mean": 0.5986600000000001,
+        "std": 0.01642979677969945,
+        "ci95_low": 0.5869068314099475,
+        "ci95_high": 0.6104131685900527
+      },
+      "ensemble": {
+        "n": 979,
+        "acc": 0.7028,
+        "macro_f1": 0.6013
+      }
+    },
+    "embed_full": {
+      "modality_dims": {
+        "emotion": 32,
+        "gesture": 32,
+        "motion": 32,
+        "context": 32
+      },
+      "acc": {
+        "mean": 0.6904,
+        "std": 0.00695301693112021,
+        "ci95_low": 0.6854261113209922,
+        "ci95_high": 0.6953738886790078
+      },
+      "macro_f1": {
+        "mean": 0.59618,
+        "std": 0.008648416682324642,
+        "ci95_low": 0.5899932954005872,
+        "ci95_high": 0.6023667045994129
+      },
+      "ensemble": {
+        "n": 979,
+        "acc": 0.7017,
+        "macro_f1": 0.6063
+      }
+    }
+  },
+  "comparisons": {
+    "probs_full_vs_rules": {
+      "mcnemar": {
+        "n10": 69,
+        "n01": 78,
+        "n_discordant": 147,
+        "p_value": 0.509501588634987,
+        "favours": "b"
+      },
+      "bootstrap": {
+        "mean_diff": -0.009394279877425945,
+        "ci95_low": -0.0337078651685393,
+        "ci95_high": 0.015321756894790543,
+        "frac_boot_favouring_a": 0.2133
+      }
+    },
+    "embed_full_vs_rules": {
+      "mcnemar": {
+        "n10": 95,
+        "n01": 105,
+        "n_discordant": 200,
+        "p_value": 0.5246223557223155,
+        "favours": "b"
+      },
+      "bootstrap": {
+        "mean_diff": -0.010328192032686414,
+        "ci95_low": -0.038815117466802884,
+        "ci95_high": 0.018386108273748758,
+        "frac_boot_favouring_a": 0.2262
+      }
+    },
+    "embed_full_vs_probs_full": {
+      "mcnemar": {
+        "n10": 44,
+        "n01": 45,
+        "n_discordant": 89,
+        "p_value": 1.0,
+        "favours": "b"
+      },
+      "bootstrap": {
+        "mean_diff": -0.0009339121552604693,
+        "ci95_low": -0.019407558733401498,
+        "ci95_high": 0.018386108273748647,
+        "frac_boot_favouring_a": 0.4441
+      }
+    }
+  }
+}

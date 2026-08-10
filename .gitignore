@@ -44,3 +44,5 @@ jetson_deploy/onnx/trt_cache/
 mlruns/
 mlruns.db
 mlruns.db-journal
+
+report/

@@ -1,0 +1,71 @@
+{
+  "emotion": {
+    "finetuned_on_train": true,
+    "probe": {
+      "train": {
+        "acc": 0.9973,
+        "macro_f1": 0.9978,
+        "n": 1507
+      },
+      "val": {
+        "acc": 0.798,
+        "macro_f1": 0.8127,
+        "n": 307
+      },
+      "test": {
+        "acc": 0.7523,
+        "macro_f1": 0.6477,
+        "n": 856
+      }
+    },
+    "probe_train_minus_test_gap": 0.245,
+    "argmax_train_minus_test_gap_reference": 0.1972,
+    "gap_worse_than_argmax": true
+  },
+  "gesture": {
+    "finetuned_on_train": true,
+    "probe": {
+      "train": {
+        "acc": 1.0,
+        "macro_f1": 1.0,
+        "n": 1409
+      },
+      "val": {
+        "acc": 0.9966,
+        "macro_f1": 0.873,
+        "n": 295
+      },
+      "test": {
+        "acc": 0.8495,
+        "macro_f1": 0.8216,
+        "n": 877
+      }
+    },
+    "probe_train_minus_test_gap": 0.1505,
+    "argmax_train_minus_test_gap_reference": 0.1357,
+    "gap_worse_than_argmax": true
+  },
+  "motion": {
+    "finetuned_on_train": false,
+    "probe": {
+      "train": {
+        "acc": 0.8511,
+        "macro_f1": 0.8146,
+        "n": 1545
+      },
+      "val": {
+        "acc": 0.7241,
+        "macro_f1": 0.6964,
+        "n": 319
+      },
+      "test": {
+        "acc": 0.5653,
+        "macro_f1": 0.4787,
+        "n": 1003
+      }
+    },
+    "probe_train_minus_test_gap": 0.2858,
+    "argmax_train_minus_test_gap_reference": -0.016,
+    "gap_worse_than_argmax": true
+  }
+}
