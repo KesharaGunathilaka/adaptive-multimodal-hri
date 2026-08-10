@@ -1,0 +1,267 @@
+{
+  "rule": {
+    "headline": {
+      "n": 979,
+      "acc": 0.712,
+      "macro_f1": 0.6414,
+      "acc_mean": 0.712,
+      "acc_std": 0.0,
+      "macro_f1_mean": 0.6414,
+      "macro_f1_std": 0.0
+    },
+    "full_test": {
+      "n": 1003,
+      "acc": 0.6949,
+      "macro_f1": 0.6282,
+      "acc_mean": 0.6949,
+      "acc_std": 0.0,
+      "macro_f1_mean": 0.6282,
+      "macro_f1_std": 0.0
+    },
+    "params": null
+  },
+  "configs": {
+    "plain": {
+      "concat_mlp": {
+        "headline": {
+          "acc_mean": 0.5036,
+          "acc_std": 0.0197,
+          "macro_f1_mean": 0.3991,
+          "macro_f1_std": 0.0082,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.4915,
+          "acc_std": 0.0191,
+          "macro_f1_mean": 0.394,
+          "macro_f1_std": 0.0077,
+          "n": 1003
+        },
+        "params": 12618
+      },
+      "self_attention": {
+        "headline": {
+          "acc_mean": 0.5475,
+          "acc_std": 0.0251,
+          "macro_f1_mean": 0.438,
+          "macro_f1_std": 0.0228,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5344,
+          "acc_std": 0.0245,
+          "macro_f1_mean": 0.433,
+          "macro_f1_std": 0.0225,
+          "n": 1003
+        },
+        "params": 70090
+      },
+      "cross_attention": {
+        "headline": {
+          "acc_mean": 0.5203,
+          "acc_std": 0.0209,
+          "macro_f1_mean": 0.4172,
+          "macro_f1_std": 0.0298,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5078,
+          "acc_std": 0.0204,
+          "macro_f1_mean": 0.4115,
+          "macro_f1_std": 0.0309,
+          "n": 1003
+        },
+        "params": 69834
+      },
+      "channel_attention": {
+        "headline": {
+          "acc_mean": 0.5451,
+          "acc_std": 0.0293,
+          "macro_f1_mean": 0.4417,
+          "macro_f1_std": 0.0247,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5324,
+          "acc_std": 0.029,
+          "macro_f1_mean": 0.4356,
+          "macro_f1_std": 0.0244,
+          "n": 1003
+        },
+        "params": 4896
+      },
+      "gmu": {
+        "headline": {
+          "acc_mean": 0.5294,
+          "acc_std": 0.0062,
+          "macro_f1_mean": 0.4336,
+          "macro_f1_std": 0.0104,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5168,
+          "acc_std": 0.006,
+          "macro_f1_mean": 0.428,
+          "macro_f1_std": 0.0096,
+          "n": 1003
+        },
+        "params": 8970
+      },
+      "lmf": {
+        "headline": {
+          "acc_mean": 0.5536,
+          "acc_std": 0.0284,
+          "macro_f1_mean": 0.4388,
+          "macro_f1_std": 0.0354,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5404,
+          "acc_std": 0.0278,
+          "macro_f1_mean": 0.4333,
+          "macro_f1_std": 0.0342,
+          "n": 1003
+        },
+        "params": 6730
+      },
+      "gbt": {
+        "headline": {
+          "acc_mean": 0.5168,
+          "acc_std": 0.0088,
+          "macro_f1_mean": 0.4169,
+          "macro_f1_std": 0.0082,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.5045,
+          "acc_std": 0.0086,
+          "macro_f1_mean": 0.4119,
+          "macro_f1_std": 0.0082,
+          "n": 1003
+        },
+        "params": null
+      }
+    },
+    "full": {
+      "concat_mlp": {
+        "headline": {
+          "acc_mean": 0.6837,
+          "acc_std": 0.0154,
+          "macro_f1_mean": 0.5819,
+          "macro_f1_std": 0.0168,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6674,
+          "acc_std": 0.015,
+          "macro_f1_mean": 0.5735,
+          "macro_f1_std": 0.0159,
+          "n": 1003
+        },
+        "params": 12618
+      },
+      "self_attention": {
+        "headline": {
+          "acc_mean": 0.7191,
+          "acc_std": 0.0164,
+          "macro_f1_mean": 0.6241,
+          "macro_f1_std": 0.0226,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.7019,
+          "acc_std": 0.016,
+          "macro_f1_mean": 0.6139,
+          "macro_f1_std": 0.0211,
+          "n": 1003
+        },
+        "params": 70090
+      },
+      "cross_attention": {
+        "headline": {
+          "acc_mean": 0.699,
+          "acc_std": 0.0096,
+          "macro_f1_mean": 0.5932,
+          "macro_f1_std": 0.015,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6823,
+          "acc_std": 0.0094,
+          "macro_f1_mean": 0.5854,
+          "macro_f1_std": 0.0136,
+          "n": 1003
+        },
+        "params": 69834
+      },
+      "channel_attention": {
+        "headline": {
+          "acc_mean": 0.6581,
+          "acc_std": 0.0097,
+          "macro_f1_mean": 0.5484,
+          "macro_f1_std": 0.0105,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6424,
+          "acc_std": 0.0094,
+          "macro_f1_mean": 0.5425,
+          "macro_f1_std": 0.0105,
+          "n": 1003
+        },
+        "params": 4896
+      },
+      "gmu": {
+        "headline": {
+          "acc_mean": 0.7065,
+          "acc_std": 0.0024,
+          "macro_f1_mean": 0.6049,
+          "macro_f1_std": 0.0038,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6896,
+          "acc_std": 0.0024,
+          "macro_f1_mean": 0.596,
+          "macro_f1_std": 0.0034,
+          "n": 1003
+        },
+        "params": 8970
+      },
+      "lmf": {
+        "headline": {
+          "acc_mean": 0.6994,
+          "acc_std": 0.0056,
+          "macro_f1_mean": 0.6023,
+          "macro_f1_std": 0.0074,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6826,
+          "acc_std": 0.0054,
+          "macro_f1_mean": 0.5925,
+          "macro_f1_std": 0.007,
+          "n": 1003
+        },
+        "params": 6730
+      },
+      "gbt": {
+        "headline": {
+          "acc_mean": 0.684,
+          "acc_std": 0.0097,
+          "macro_f1_mean": 0.6008,
+          "macro_f1_std": 0.0071,
+          "n": 979
+        },
+        "full_test": {
+          "acc_mean": 0.6677,
+          "acc_std": 0.0095,
+          "macro_f1_mean": 0.5913,
+          "macro_f1_std": 0.0069,
+          "n": 1003
+        },
+        "params": null
+      }
+    }
+  }
+}

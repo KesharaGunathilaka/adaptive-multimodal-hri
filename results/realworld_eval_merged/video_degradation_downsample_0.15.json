@@ -1,0 +1,12 @@
+{
+  "condition": "downsample_0.15",
+  "kind": "downsample",
+  "severity": 0.15,
+  "n_clips": 63,
+  "fusion_acc": 0.4921,
+  "rule_acc": 0.5079,
+  "emo_obs_rate": 1.0,
+  "ges_obs_rate": 1.0,
+  "mot_obs_rate": 1.0,
+  "elapsed_s": 862.6
+}

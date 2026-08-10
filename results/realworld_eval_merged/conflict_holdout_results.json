@@ -1,0 +1,38 @@
+{
+  "real_novel": {
+    "n": 372,
+    "restricted": {
+      "n": 372,
+      "acc": 0.2849,
+      "macro_f1": 0.1564
+    },
+    "full_reference": {
+      "n": 372,
+      "acc": 0.6828,
+      "macro_f1": 0.3238
+    },
+    "rules": {
+      "n": 372,
+      "acc": 0.7634,
+      "macro_f1": 0.3962
+    }
+  },
+  "real_seen": {
+    "n": 401,
+    "restricted": {
+      "n": 401,
+      "acc": 0.818,
+      "macro_f1": 0.3272
+    },
+    "full_reference": {
+      "n": 401,
+      "acc": 0.7955,
+      "macro_f1": 0.3248
+    },
+    "rules": {
+      "n": 401,
+      "acc": 0.7257,
+      "macro_f1": 0.3139
+    }
+  }
+}

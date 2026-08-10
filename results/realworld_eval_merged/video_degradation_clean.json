@@ -1,0 +1,12 @@
+{
+  "condition": "clean",
+  "kind": "clean",
+  "severity": null,
+  "n_clips": 63,
+  "fusion_acc": 0.6984,
+  "rule_acc": 0.7778,
+  "emo_obs_rate": 1.0,
+  "ges_obs_rate": 1.0,
+  "mot_obs_rate": 1.0,
+  "elapsed_s": 739.0
+}

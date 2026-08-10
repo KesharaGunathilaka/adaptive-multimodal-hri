@@ -1,0 +1,98 @@
+[
+  {
+    "condition": "clean",
+    "kind": "clean",
+    "severity": null,
+    "n_clips": 63,
+    "fusion_acc": 0.6984,
+    "rule_acc": 0.7778,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 739.0
+  },
+  {
+    "condition": "blur_9",
+    "kind": "blur",
+    "severity": 9,
+    "n_clips": 63,
+    "fusion_acc": 0.6349,
+    "rule_acc": 0.6667,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 819.4
+  },
+  {
+    "condition": "blur_21",
+    "kind": "blur",
+    "severity": 21,
+    "n_clips": 63,
+    "fusion_acc": 0.4603,
+    "rule_acc": 0.5397,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 743.6
+  },
+  {
+    "condition": "dark_0.35",
+    "kind": "dark",
+    "severity": 0.35,
+    "n_clips": 63,
+    "fusion_acc": 0.6667,
+    "rule_acc": 0.7619,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 1183.3
+  },
+  {
+    "condition": "dark_0.15",
+    "kind": "dark",
+    "severity": 0.15,
+    "n_clips": 63,
+    "fusion_acc": 0.5556,
+    "rule_acc": 0.6349,
+    "emo_obs_rate": 0.984,
+    "ges_obs_rate": 0.937,
+    "mot_obs_rate": 0.937,
+    "elapsed_s": 1540.2
+  },
+  {
+    "condition": "downsample_0.35",
+    "kind": "downsample",
+    "severity": 0.35,
+    "n_clips": 63,
+    "fusion_acc": 0.6508,
+    "rule_acc": 0.6349,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 741.8
+  },
+  {
+    "condition": "downsample_0.15",
+    "kind": "downsample",
+    "severity": 0.15,
+    "n_clips": 63,
+    "fusion_acc": 0.4921,
+    "rule_acc": 0.5079,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 862.6
+  },
+  {
+    "condition": "jpeg_10",
+    "kind": "jpeg",
+    "severity": 10,
+    "n_clips": 63,
+    "fusion_acc": 0.5714,
+    "rule_acc": 0.5714,
+    "emo_obs_rate": 1.0,
+    "ges_obs_rate": 1.0,
+    "mot_obs_rate": 1.0,
+    "elapsed_s": 1016.3
+  }
+]

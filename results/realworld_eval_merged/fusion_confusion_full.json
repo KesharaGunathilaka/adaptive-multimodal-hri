@@ -1,0 +1,232 @@
+{
+  "config": "full (dropout 0.3 + jitter 0.15 + recombination)",
+  "model": "attention_fusion (self-attention, 70,090 params)",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "n_per_combo": 100,
+  "n_synthetic": 44800,
+  "eval": "headline test clips, clip-level mean-pooled cues",
+  "headline": {
+    "acc_mean": 0.7191,
+    "acc_std": 0.0164,
+    "macro_f1_mean": 0.6241,
+    "macro_f1_std": 0.0226,
+    "n": 979
+  },
+  "per_seed": [
+    {
+      "n": 979,
+      "acc": 0.7416,
+      "macro_f1": 0.655
+    },
+    {
+      "n": 979,
+      "acc": 0.7028,
+      "macro_f1": 0.6018
+    },
+    {
+      "n": 979,
+      "acc": 0.713,
+      "macro_f1": 0.6155
+    }
+  ],
+  "intents_present": [
+    "F01",
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F10"
+  ],
+  "confusion_pooled_3seeds": [
+    [
+      544,
+      8,
+      3,
+      0,
+      6,
+      14,
+      19,
+      0,
+      0
+    ],
+    [
+      30,
+      188,
+      22,
+      2,
+      70,
+      41,
+      0,
+      0,
+      10
+    ],
+    [
+      12,
+      1,
+      204,
+      10,
+      41,
+      3,
+      6,
+      8,
+      0
+    ],
+    [
+      81,
+      29,
+      37,
+      227,
+      3,
+      7,
+      12,
+      0,
+      0
+    ],
+    [
+      5,
+      3,
+      21,
+      6,
+      197,
+      5,
+      0,
+      0,
+      3
+    ],
+    [
+      0,
+      0,
+      3,
+      3,
+      8,
+      75,
+      127,
+      0,
+      0
+    ],
+    [
+      3,
+      0,
+      9,
+      0,
+      17,
+      5,
+      239,
+      18,
+      0
+    ],
+    [
+      5,
+      0,
+      0,
+      23,
+      20,
+      0,
+      13,
+      209,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      30,
+      22,
+      0,
+      0,
+      229
+    ]
+  ],
+  "per_class": {
+    "F01": {
+      "precision": 0.8003,
+      "precision_std": 0.0116,
+      "recall": 0.9158,
+      "recall_std": 0.0126,
+      "f1": 0.854,
+      "f1_std": 0.0014,
+      "support": 198
+    },
+    "F02": {
+      "precision": 0.8197,
+      "precision_std": 0.0459,
+      "recall": 0.5179,
+      "recall_std": 0.0039,
+      "f1": 0.6344,
+      "f1_std": 0.0169,
+      "support": 121
+    },
+    "F03": {
+      "precision": 0.6817,
+      "precision_std": 0.0263,
+      "recall": 0.7158,
+      "recall_std": 0.0523,
+      "f1": 0.698,
+      "f1_std": 0.037,
+      "support": 95
+    },
+    "F04": {
+      "precision": 0.8387,
+      "precision_std": 0.0254,
+      "recall": 0.5732,
+      "recall_std": 0.0071,
+      "f1": 0.6807,
+      "f1_std": 0.0053,
+      "support": 132
+    },
+    "F05": {
+      "precision": 0.5059,
+      "precision_std": 0.0406,
+      "recall": 0.8208,
+      "recall_std": 0.0059,
+      "f1": 0.625,
+      "f1_std": 0.0313,
+      "support": 80
+    },
+    "F06": {
+      "precision": 0.4134,
+      "precision_std": 0.0884,
+      "recall": 0.3472,
+      "recall_std": 0.1693,
+      "f1": 0.3705,
+      "f1_std": 0.1356,
+      "support": 72
+    },
+    "F07": {
+      "precision": 0.5776,
+      "precision_std": 0.0441,
+      "recall": 0.8213,
+      "recall_std": 0.0129,
+      "f1": 0.6773,
+      "f1_std": 0.031,
+      "support": 97
+    },
+    "F08": {
+      "precision": 0.8894,
+      "precision_std": 0.0047,
+      "recall": 0.7741,
+      "recall_std": 0.0052,
+      "f1": 0.8277,
+      "f1_std": 0.001,
+      "support": 90
+    },
+    "F10": {
+      "precision": 0.9462,
+      "precision_std": 0.0118,
+      "recall": 0.8121,
+      "recall_std": 0.0351,
+      "f1": 0.8737,
+      "f1_std": 0.0226,
+      "support": 94
+    }
+  },
+  "note": "macro-F1 elsewhere in this project is computed over all 10 intent labels while final_merged contains only 9 (F09 was removed 2026-07-31), so those macro-F1 values are capped at 0.900. The per-class table here is over the 9 present classes only."
+}

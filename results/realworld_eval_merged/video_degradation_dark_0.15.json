@@ -1,0 +1,12 @@
+{
+  "condition": "dark_0.15",
+  "kind": "dark",
+  "severity": 0.15,
+  "n_clips": 63,
+  "fusion_acc": 0.5556,
+  "rule_acc": 0.6349,
+  "emo_obs_rate": 0.984,
+  "ges_obs_rate": 0.937,
+  "mot_obs_rate": 0.937,
+  "elapsed_s": 1540.2
+}

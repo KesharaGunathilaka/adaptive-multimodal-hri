@@ -1,0 +1,359 @@
+{
+  "MobileNetV2_RAFDB_only": {
+    "arch": "MobileNetV2",
+    "checkpoint": "best_MobileNetV2.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.4322,
+      "macro_f1": 0.3583
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.4667,
+        "macro_f1": 0.0909
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.3556,
+        "macro_f1": 0.0874
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.0083,
+        "macro_f1": 0.0055
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7292,
+        "macro_f1": 0.1687
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.9398,
+        "macro_f1": 0.2422
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.1697,
+        "macro_f1": 0.0484
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.7,
+      "macro_f1": 0.2542
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.3968,
+      "macro_f1": 0.3301
+    }
+  },
+  "MobileNetV2_finetuned_DEPLOYED": {
+    "arch": "MobileNetV2",
+    "checkpoint": "finetuned_MobileNetV2.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.7745,
+      "macro_f1": 0.6681
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.9333,
+        "macro_f1": 0.3218
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.7778,
+        "macro_f1": 0.175
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.8099,
+        "macro_f1": 0.179
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7639,
+        "macro_f1": 0.1732
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.6015,
+        "macro_f1": 0.1502
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.7569,
+        "macro_f1": 0.1436
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.87,
+      "macro_f1": 0.463
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.7619,
+      "macro_f1": 0.66
+    }
+  },
+  "EfficientNetB0_RAFDB_only": {
+    "arch": "EfficientNet-B0",
+    "checkpoint": "best_EfficientNet_B0.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.3785,
+      "macro_f1": 0.3182
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.6467,
+        "macro_f1": 0.1571
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.2778,
+        "macro_f1": 0.0725
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.0083,
+        "macro_f1": 0.0041
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.4514,
+        "macro_f1": 0.1037
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.8346,
+        "macro_f1": 0.2275
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.1147,
+        "macro_f1": 0.0343
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.55,
+      "macro_f1": 0.1858
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.3558,
+      "macro_f1": 0.2835
+    }
+  },
+  "EfficientNetB0_finetuned": {
+    "arch": "EfficientNet-B0",
+    "checkpoint": "finetuned_EfficientNet_B0.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.6612,
+      "macro_f1": 0.568
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.8667,
+        "macro_f1": 0.2321
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.3333,
+        "macro_f1": 0.1
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.3223,
+        "macro_f1": 0.0975
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7847,
+        "macro_f1": 0.1759
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.9098,
+        "macro_f1": 0.2382
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.6101,
+        "macro_f1": 0.1083
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.92,
+      "macro_f1": 0.4737
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.627,
+      "macro_f1": 0.5496
+    }
+  },
+  "EfficientNetB0_finetuned_v2": {
+    "arch": "EfficientNet-B0",
+    "checkpoint": "finetuned_v2_EfficientNet_B0.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.6507,
+      "macro_f1": 0.5568
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.8533,
+        "macro_f1": 0.1842
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.3556,
+        "macro_f1": 0.1049
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.2727,
+        "macro_f1": 0.0857
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.7778,
+        "macro_f1": 0.125
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.9023,
+        "macro_f1": 0.1897
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.6055,
+        "macro_f1": 0.1078
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.92,
+      "macro_f1": 0.4763
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.6151,
+      "macro_f1": 0.5384
+    }
+  },
+  "MobileNetV3Large_RAFDB_only": {
+    "arch": "MobileNetV3-Large",
+    "checkpoint": "best_MobileNetV3_Large.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.3411,
+      "macro_f1": 0.2838
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.6133,
+        "macro_f1": 0.1086
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.4444,
+        "macro_f1": 0.1231
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.0165,
+        "macro_f1": 0.0081
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.2153,
+        "macro_f1": 0.0506
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.8346,
+        "macro_f1": 0.182
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.0734,
+        "macro_f1": 0.0228
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.33,
+      "macro_f1": 0.1306
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.3426,
+      "macro_f1": 0.2543
+    }
+  },
+  "MobileNetV3Large_finetuned": {
+    "arch": "MobileNetV3-Large",
+    "checkpoint": "backbonecmp_MobileNetV3_Large.pth",
+    "headline": {
+      "n": 856,
+      "acc": 0.6951,
+      "macro_f1": 0.61
+    },
+    "by_class": {
+      "Anger": {
+        "n": 150,
+        "acc": 0.9133,
+        "macro_f1": 0.4774
+      },
+      "Disgust": {
+        "n": 90,
+        "acc": 0.9,
+        "macro_f1": 0.1895
+      },
+      "Fear": {
+        "n": 121,
+        "acc": 0.719,
+        "macro_f1": 0.1673
+      },
+      "Happy": {
+        "n": 144,
+        "acc": 0.5972,
+        "macro_f1": 0.1068
+      },
+      "Neutral": {
+        "n": 133,
+        "acc": 0.609,
+        "macro_f1": 0.1262
+      },
+      "Sad": {
+        "n": 218,
+        "acc": 0.5642,
+        "macro_f1": 0.1031
+      }
+    },
+    "curated_clip": {
+      "n": 100,
+      "acc": 0.63,
+      "macro_f1": 0.3073
+    },
+    "raw_take": {
+      "n": 756,
+      "acc": 0.7037,
+      "macro_f1": 0.6163
+    }
+  }
+}

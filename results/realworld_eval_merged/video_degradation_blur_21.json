@@ -1,0 +1,12 @@
+{
+  "condition": "blur_21",
+  "kind": "blur",
+  "severity": 21,
+  "n_clips": 63,
+  "fusion_acc": 0.4603,
+  "rule_acc": 0.5397,
+  "emo_obs_rate": 1.0,
+  "ges_obs_rate": 1.0,
+  "mot_obs_rate": 1.0,
+  "elapsed_s": 743.6
+}

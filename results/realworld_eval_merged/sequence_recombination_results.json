@@ -1,0 +1,25 @@
+{
+  "causal_base": {
+    "acc_mean": 0.5329,
+    "acc_std": 0.0274,
+    "macro_f1_mean": 0.4324,
+    "macro_f1_std": 0.0234,
+    "n": 979
+  },
+  "causal_recomb": {
+    "acc_mean": 0.7136,
+    "acc_std": 0.0172,
+    "macro_f1_mean": 0.6216,
+    "macro_f1_std": 0.0221,
+    "n": 979
+  },
+  "bidi_recomb": {
+    "acc_mean": 0.7031,
+    "acc_std": 0.0046,
+    "macro_f1_mean": 0.5989,
+    "macro_f1_std": 0.0098,
+    "n": 979
+  },
+  "n_synthetic": 44800,
+  "n_combos_covered": 448
+}

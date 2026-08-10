@@ -1,0 +1,12 @@
+{
+  "condition": "jpeg_10",
+  "kind": "jpeg",
+  "severity": 10,
+  "n_clips": 63,
+  "fusion_acc": 0.5714,
+  "rule_acc": 0.5714,
+  "emo_obs_rate": 1.0,
+  "ges_obs_rate": 1.0,
+  "mot_obs_rate": 1.0,
+  "elapsed_s": 1016.3
+}

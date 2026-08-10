@@ -1,0 +1,92 @@
+{
+  "overall": {
+    "emotion": 0.2952,
+    "gesture": 0.3176,
+    "motion": 0.1755,
+    "context": 0.1006
+  },
+  "per_intent": {
+    "F01": {
+      "emotion": 0.3678,
+      "gesture": 0.3124,
+      "motion": 0.1041,
+      "context": 0.1035
+    },
+    "F02": {
+      "emotion": 0.3597,
+      "gesture": 0.2141,
+      "motion": 0.2244,
+      "context": 0.0814
+    },
+    "F03": {
+      "emotion": 0.2087,
+      "gesture": 0.3396,
+      "motion": 0.2334,
+      "context": 0.1031
+    },
+    "F04": {
+      "emotion": 0.2791,
+      "gesture": 0.4028,
+      "motion": 0.0957,
+      "context": 0.1079
+    },
+    "F05": {
+      "emotion": 0.1879,
+      "gesture": 0.457,
+      "motion": 0.2022,
+      "context": 0.0772
+    },
+    "F06": {
+      "emotion": 0.1887,
+      "gesture": 0.3263,
+      "motion": 0.2729,
+      "context": 0.0898
+    },
+    "F07": {
+      "emotion": 0.3748,
+      "gesture": 0.2437,
+      "motion": 0.1458,
+      "context": 0.1194
+    },
+    "F08": {
+      "emotion": 0.335,
+      "gesture": 0.3157,
+      "motion": 0.1313,
+      "context": 0.1197
+    },
+    "F10": {
+      "emotion": 0.2218,
+      "gesture": 0.2726,
+      "motion": 0.2925,
+      "context": 0.0968
+    }
+  },
+  "spotlight": [
+    {
+      "gesture": "both hands up",
+      "v3_row": 26,
+      "context": "classroom",
+      "emotion": "neutral",
+      "motion": "sit",
+      "intent": "F05",
+      "n_clips": 52,
+      "attn_emotion": 0.187,
+      "attn_gesture": 0.51,
+      "attn_motion": 0.144,
+      "attn_context": 0.083
+    },
+    {
+      "gesture": "wave",
+      "v3_row": 22,
+      "context": "classroom",
+      "emotion": "[missing]",
+      "motion": "walk",
+      "intent": "F01",
+      "n_clips": 52,
+      "attn_emotion": 0.356,
+      "attn_gesture": 0.349,
+      "attn_motion": 0.087,
+      "attn_context": 0.1
+    }
+  ]
+}
