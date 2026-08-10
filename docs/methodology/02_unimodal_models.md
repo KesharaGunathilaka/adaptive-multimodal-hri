@@ -78,9 +78,36 @@ The param count is 2.23M rather than the textbook ~3.5M because the 1280→1000
 ImageNet head (~1.28M params) was replaced by 1280→7 (8,967 params). The feature
 extractor is untouched ImageNet MobileNetV2; only the last linear layer is new.
 
-**Why this backbone:** it won a four-way comparison (`src/models.py:47` registry:
-MobileNetV2, MobileNetV3-Large, EfficientNet-B0, MNASNet1.0) on accuracy vs size
-within the Jetson budget (`SIZE_BUDGET_MB = 20`).
+**Why this backbone — and why it is *not* simply "won the Stage-1 table."** The
+Stage-1 search (`src/models.py:47` registry: MobileNetV2, MobileNetV3-Large,
+EfficientNet-B0, MNASNet1.0) ranks candidates by macro-F1 **on RAF-DB alone**,
+within the Jetson size budget (`SIZE_BUDGET_MB = 20`). On that table
+EfficientNet-B0 wins (69.76% macro-F1 vs MobileNetV2's 61.34%) — so the
+RAF-DB benchmark, taken at face value, recommends the wrong model.
+
+RAF-DB is curated, close-up portrait photography; this project's footage has
+subjects 2–5 m from camera with 40–90 px faces, a distribution RAF-DB does not
+represent. Backbone selection cannot stop at RAF-DB accuracy, so every
+candidate was fine-tuned once more, with an identical recipe, on real face
+crops from this project's own footage (`scripts/46_finetune_emotion_backbone.py`,
+warm-started from each architecture's own RAF-DB checkpoint), then re-scored
+on 856 held-out real-world test clips (`scripts/45_compare_emotion_backbones.py`,
+clip-level mean-softmax, same protocol for every model):
+
+| Model | RAF-DB-only acc / macro-F1 | Real-data fine-tuned acc / macro-F1 |
+|---|---|---|
+| **MobileNetV2 (deployed)** | 43.22% / 35.83% | **77.45% / 66.81%** |
+| MobileNetV3-Large | 34.11% / 28.38% | 69.51% / 61.00% |
+| EfficientNet-B0 | 37.85% / 31.82% | 66.12% / 56.80% |
+
+Under the deployment-realistic criterion the RAF-DB ranking does not merely
+weaken, it **inverts**: MobileNetV2 beats EfficientNet-B0 by +11.3 points
+accuracy / +10.0 points macro-F1 after fine-tuning, despite being the
+*smallest* candidate (2.23M params vs EfficientNet-B0's 4.02M). MobileNetV2 is
+deployed because it wins on real footage after fine-tuning, not because it won
+the RAF-DB search — the RAF-DB table alone would have picked the wrong model.
+Full numbers: `results/realworld_eval_merged/emotion_backbone_comparison.json`;
+narrative writeup: `modalities/emotion/reports/comparison/COMPARISON_REPORT.md`.
 
 ### Input pipeline
 frame → **MediaPipe face detection with a robust 3-pass fallback**

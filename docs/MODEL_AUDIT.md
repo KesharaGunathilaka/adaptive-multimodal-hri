@@ -20,6 +20,17 @@ byte-identical. Accuracies are the held-out real-video numbers from each modalit
 actual head order differs. **The fusion feature table will store probabilities in the model's
 native RAF-DB order**; any remapping happens once, documented, at extraction time.
 
+**Backbone choice, proven (2026-08-07):** the Stage-1 RAF-DB-only search
+(`modalities/emotion/reports/comparison/COMPARISON_REPORT.md`) ranks EfficientNet-B0 above
+MobileNetV2 (69.76% vs 61.34% macro-F1). That ranking does not transfer to deployment: RAF-DB is
+curated close-up portraits, this project's footage is 40–90 px faces at 2–5 m. All three
+candidates were fine-tuned once more on real face crops with an identical recipe and re-scored on
+856 held-out real-world test clips — the RAF-DB ranking **inverts**: MobileNetV2 77.45%/66.81%
+acc/macro-F1 > MobileNetV3-Large 69.51%/61.00% > EfficientNet-B0 66.12%/56.80%. MobileNetV2 is
+deployed because it wins the real-world criterion, not the RAF-DB one. Reproduce with
+`scripts/46_finetune_emotion_backbone.py` + `scripts/45_compare_emotion_backbones.py`; raw numbers
+in `results/realworld_eval_merged/emotion_backbone_comparison.json`.
+
 ## 2. Gesture — TCN over MediaPipe keypoint sequences (per-window)
 
 | | |

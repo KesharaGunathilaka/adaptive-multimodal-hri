@@ -1,5 +1,524 @@
 # WORKLOG — cross-machine progress log
 
+## 2026-08-08 (later) — [WIN-3060] — Embedding-level fusion: built end-to-end, tested four ways, all negative-to-neutral
+
+**Trigger:** following the statistical-audit session (below), user asked about extracting
+penultimate-layer embeddings from all four unimodal models (motivated by `PERCEPTION_BAND.md`
+identifying perception, not fusion generalisation, as the dominant remaining error band) and
+requested the full investigation through to a properly-tested conclusion.
+
+**0. Extraction pipeline built and run** (`fusion/extraction/perframe.py::extract_embeddings_only`,
+`windows.py`'s new embedding hooks, `scripts/54_extract_embeddings.py`,
+`scripts/55_pool_embeddings.py`). All three learned models' penultimate embeddings are FREE — a
+classifier's final `Linear` layer's *input* is the embedding, captured via a forward hook with zero
+extra compute; CLIP's 512-d embedding was already computed and discarded before the text-similarity
+step. Skipping MediaPipe Holistic entirely for the embedding-only pass (emotion's face crop uses a
+separate cheap detector) cut a naive ~6h re-extraction estimate to ~1h actual. **2869/2869 clips
+extracted, 1.8GB total** (vs the corrupted transfer attempt's 7.7GB of per-frame JSON — this stays
+local, pooled at window/clip grain like everything else in this pipeline).
+
+**Two real bugs caught before trusting the output** (both documented in the
+`embeddings-corrupt-on-win3060`/`perframe-4k-face-detection-gotcha` memories): (1) a 4K clip with no
+visible face cost 54 minutes in the face-detection fallback (228 more 4K clips were queued —
+fixed with a resolution-scoped workaround, verified zero-effect below 3000px); (2) 2/2869 clips had
+fully-NaN pooled emotion embeddings from a cross-pass face-detection mask mismatch (fixed, verified
+zero NaN across all four modalities after the fix).
+
+**1. Pipeline sanity + dimensionality risk** (`scripts/56_embedding_probe.py` →
+`EMBEDDING_PROBE.md`). A linear probe on pooled embeddings recovers known argmax accuracy closely
+for emotion/gesture (single-linear-layer classifier heads; motion's gap is expected, its head has an
+extra ReLU+Linear a probe can't reproduce) — confirms the pipeline is correct. But **motion's
+probe train/test gap (+0.286) is LARGER than gesture's (+0.151) or emotion's (+0.245) despite motion
+never being fine-tuned on train** — ruling out fine-tune contamination as the sole explanation and
+pointing at raw dimensionality: 2176 combined raw dims against ~1547 train clips.
+
+**2. Plain (no augmentation) embeddings lose significantly**
+(`scripts/57_embedding_fusion.py` → `EMBEDDING_FUSION.md`, `AttentionFusion` generalised to
+arbitrary per-modality width via a new `modality_dims` constructor arg, fully backward-compatible).
+PCA (32 components/modality, fit on train only) is required, not optional, given finding 1. 10
+seeds: `probs_only` 0.5552±0.0245 > `embed_only` 0.5292±0.0291 (p=0.0014) > `embed_probs`
+0.5104±0.0379 (p<0.0001) — concatenating hurts more than embeddings alone. A 2-seed smoke test had
+shown embeddings AHEAD; reversed completely at 10 seeds, same lesson as the significance-testing
+session below.
+
+**3. Full recipe (recombination + dropout + jitter) ties** (`fusion/model/recombine_embed.py`,
+`fusion/model/generic_train.py` — a generalised training loop since `WindowDataset`/`train_fusion`
+are hardcoded to the 24-dim probability layout; `scripts/58_embedding_fusion_full.py` →
+`EMBEDDING_FUSION_FULL.md`). Same 448-combo rubric as `recombine_merged.py`, in-fold pools (known
+contamination, not yet fixed at this step). 10 seeds, paired via the identical training loop:
+`embed_full` 0.6904±0.0070 vs `probs_full` 0.6993±0.0135 — **McNemar p=1.0000, an exact tie**
+(n10=44, n01=45). Recombination rescues embeddings from "significantly worse" to "tied", but no
+further.
+
+**4. Out-of-fold pools (contamination fix) make it WORSE, not better** — the most informative
+result. Built 2-fold held-out retraining for gesture+emotion only (`scripts/59_outfold_finetune.py`
+— motion/context skipped, never contaminated per `POOL_PURITY.md`; folds split TRAIN v3_rows,
+stratified by intent, persisted to `outfold_split.json`; reused scripts 34/36's exact recipes,
+warm-started from deployed, output to new `*_fold{0,1}.pth` files, never touching deployed/promoted
+checkpoints). `scripts/60_outfold_pools.py` scores each fold's held-out clips with the checkpoint
+that never trained on them (gesture: free via `WindowFeaturizer(gesture_ckpt=...)`'s existing
+override + hook; emotion: reuses cached crops, no video decode) — 99.9%+ coverage.
+`scripts/61_embedding_fusion_outfold.py` re-ran the full-recipe comparison with these pools (PCA/
+scaler kept fit on the DEPLOYED model's embeddings, unchanged, so real train/val/test scoring stays
+consistent — only the recombination pool SOURCE changed). Result: `embed_full_outfold`
+**0.6742±0.0112**, WORSE than both the in-fold version (0.6904) and `probs_full` (0.6993,
+p=0.0544 borderline) and now significantly worse than rules (p=0.0480). Interpretation: each fold
+checkpoint trained on only half the data is a weaker classifier, so "clean" out-of-fold pool vectors
+are also noisier — contamination was propping the number up, not suppressing a hidden win.
+
+**Verdict, all four tests:** embedding-level fusion never significantly beat the 24-dim probability
+baseline in any configuration (plain: loses; full in-fold: ties; full out-of-fold: loses). Combined
+with finding 1's dimensionality evidence, the defensible conclusion is that **raw penultimate
+embeddings do not help this fusion architecture at this dataset's scale** — the bottleneck is
+sample count relative to representation width, not pool contamination or lack of recombination.
+`PERCEPTION_BAND.md`'s ~0.22 perception band remains open; this was one well-tested candidate lever
+for it, ruled out rather than confirmed.
+
+**Next (not done):** if revisited, the more promising directions are (a) a much lower-dimensional
+embedding (8-16 components) or a supervised projection (e.g. LDA) instead of unsupervised PCA, since
+variance-maximising PCA is not optimised for class separation the way the classifier's own softmax
+already is; (b) more training data before richer representations pay off; (c) directly improving the
+underlying cue classifiers (the actual perception fix) rather than exposing more of their internals
+to fusion.
+
+
+## 2026-08-08 (earlier) — [WIN-3060] — Statistical audit: the headline claim fails, and the gap decomposition reverses
+
+**Trigger:** user restated the publication objective (fusion must beat rules; results >70%) and
+pointed at newly extracted per-cue embeddings. Four investigations run in order; three of the four
+findings are corrections to things the project currently asserts.
+
+**0. The embeddings are unusable as copied.** `fusion/fusion-engine-embeddings/` (7.7 GB, four
+JSONL dumps: emotion 1280-d, gesture 128-d, motion 256-d, context 512-d) is a valid JSON prefix
+followed by raw binary. Salvageable: emotion 4.8% (~178 of 2,904 clips), gesture 30.4%, motion
+8.9%, context 2.5%. Run logs on the HPC end `batch done: 2904 clips processed`, so this is a
+transfer failure, not an extraction bug. Re-copy from
+`/home/hri_multimodal/Downloads/fusion-engine/data/features/embeddings/` with checksums, ideally
+re-dumped as float16 `.npy` (~40x smaller than this JSON). **User elected to park embedding work**
+— but finding 2 below is a direct argument to revisit that.
+
+**1. The headline fusion-vs-rules claim is not significant** (`scripts/49_significance.py` →
+`SIGNIFICANCE.md`; stats helpers factored into `scripts/realworld_eval/stats.py`).
+`SCENARIO_TEST_REPORT.md` asserted "Fusion beats rules by 0.0071 acc — the G1/T05 claim holds" on
+a 3-seed mean of 0.7191 ± 0.0164 — a margin under half its own std. At **10 seeds**:
+
+| | Clip acc | Macro-F1 |
+|---|---|---|
+| Fusion, 10 seeds | 0.7133 ± 0.0160 | 0.6146 |
+| Fusion, 10-seed majority vote | 0.7130 | 0.6140 |
+| Rules | 0.7120 | **0.6414** |
+
+McNemar exact (ensemble vs rules) **p=1.0000** (n10=73, n01=72); bootstrap over clips +0.0009,
+95% CI [−0.0235, +0.0255] containing zero; **4 of 10 seeds favour rules**, 1 of 10 beats them
+significantly. The 3-seed figure was a small-sample artifact — seeds (0,1,2) happen to include
+seed 0 (0.7416), the best of ten and the only significant one. **Rules also beat fusion on
+macro-F1**, the metric that matters for rare/safety intents. `SCENARIO_TEST_REPORT.md` corrected
+in place with the superseded number left visible.
+
+**1b. No comparison this project has made is resolvable at 3 seeds.** With the measured σ=0.0160,
+3 seeds give a 95% CI half-width of ±0.0397, so the smallest resolvable difference is ~0.079.
+Every claimed gap is far below it: self-attn vs GMU 0.0126, vs cross-attn 0.0201, vs concat-MLP
+0.0354, window x0.5 vs x1.0 0.0061, R1 vs R2 0.0082, fusion vs rules 0.0071. The architecture
+roster's whole spread (0.7191→0.6581 = 0.061) is under the threshold. Written up as
+`docs/methodology/06_fusion_model.md` §6.10. **Fix: compare configs paired by seed** (common seed
+effects cancel) and persist per-seed values — Studies 1–3 saved only aggregated mean/std, so they
+cannot be re-analysed without re-running.
+
+**2. The gap decomposition REVERSES on the deployed recipe** (`scripts/50_perception_band.py` →
+`PERCEPTION_BAND.md`). `GAP_DECOMPOSITION_MERGED.md`'s "generalisation 0.381 dominates perception
+0.072" was measured on the *plain* model and has been stale since recombination landed — the
+2026-08-03 entry flagged this re-run as a to-do and it was never done. On the `full` recipe,
+10 seeds:
+
+| Cues | Fusion | Rules |
+|---|---|---|
+| real | 0.7133 ± 0.0151 | 0.7120 |
+| oracle one-hot | **0.9373 ± 0.0216** | 1.0000 |
+| oracle realistic (true class, real soft vector) | 0.8176 ± 0.0156 | 0.8233 |
+
+fusion+oracle moved **0.619 → 0.9373**: generalisation cost **0.381 → 0.063**, perception cost
+**0.072 → 0.224**. Cross-checked — under the realistic-oracle condition rules cannot generalise
+wrongly by construction, so their 0.1767 shortfall is pure residual noise and fusion is only
++0.0057 worse. **Recombination did its job; perception is now the shared bottleneck of both
+systems.** Implication: fusion-architecture work has ~0.06 of headroom left and is a dead end;
+the ~0.22 perception band holds everything remaining.
+
+**3. T02's `point` collapse diagnosed and partly fixed** (`fusion/model/recombine_merged.py`
+gained `allocate()`; `scripts/51_recombination_balance.py` → `RECOMBINATION_BALANCE.md`). Row #27
+scored 0.038 vs rules' 0.642 with **clean cues** (anger 0.80, point 0.65, walking 0.81), ruling
+out perception. Cause: constant `n_per_combo` weights cue COMBOS equally, so each intent's share
+follows its combo count — skewed globally (F01 104/448, F10 8/448) and, decisively, *within a cue
+family*: `Anger+point` is F07 6/8 vs **F06 2/8**, `Happy+point` is F05 6/8 vs **F03 2/8**. Both
+collapsing rows are the 25% minority branch. Four allocation modes, 5 seeds, equal synthetic
+budget, **mode selected on VAL macro-F1**:
+
+| Mode | Val macro-F1 | Test acc | Test macro-F1 | row #27 | row #55 |
+|---|---|---|---|---|---|
+| `uniform` | 0.7541 | 0.7134 ± 0.0175 | 0.6137 | 0.038 | 0.357 |
+| `sqrt` | 0.7678 | 0.7216 ± 0.0072 | 0.6220 | 0.019 | 0.476 |
+| **`intent`** ←selected | **0.7838** | 0.7299 ± 0.0139 | 0.6346 | 0.057 | 0.571 |
+| `family` | 0.7589 | 0.7354 ± 0.0113 | **0.6425** | 0.076 | 0.643 |
+| rules | — | 0.7120 | 0.6414 | 0.642 | 0.571 |
+
+Monotonic improvement in the predicted direction confirms the mechanism (`family` equalises the
+*conditional* prior to 1:1.00 where `intent` only reaches 1:2.80). **`family` scores best on test
+and is the only mode to exceed rules' macro-F1 — but `intent` won on val, and swapping to
+`family` because it looks better on test would be tuning on test.** Reported as selected=`intent`;
+`family` needs a pre-registered re-test (more seeds, or a fresh val split) before adoption.
+Selected mode vs rules: McNemar p=0.1807, favours fusion, bootstrap CI still contains 0. **Row #27
+is NOT fixed** (0.076 vs rules' 0.642) — rebalancing moves it monotonically but recovers only a
+fraction; F06 has a residual cause, see finding 5.
+
+**4. T04 is structurally near-vacuous on this rubric** (`scripts/52_context_counterfactual.py` →
+`CONTEXT_COUNTERFACTUAL.md`). The row-pairing T04 table has **20 of 30 rows at n=0** test clips.
+Replaced with a counterfactual every clip can take: keep real emotion/gesture/motion, swap only
+the context cue for a real vector from the other room, ask whether the prediction moves as the
+rubric says. Structural result: **context changes the intent for 24 of 224 (emo × ges × mot)
+tuples (10.7%), every one of them `raise_hand`** — so 89% of any T04 measurement is an invariance
+test passable by ignoring context. In the test split the flip subset is n=52, all from row #25,
+all classroom. Independently agrees with two earlier findings (Phase-1 context swap changed 0
+clips; cue attribution ranks context last on every intent). Fusion invariance 0.9946 vs rules
+1.0000. **Caught a misleading metric before it became a claim**: `flip_followed` reads fusion
+0.827 vs rules 0.404, but row #25's kitchen answer is F01 — the majority class — so an F01-biased
+model scores well without tracking context at all (the tell: `flip_changed_at_all` exactly equals
+`flip_correct_before`). Added `flip_correct_both` (right in BOTH rooms), the metric that cannot be
+won by class bias: **fusion 0.3077, rules 0.1923**. Fusion is genuinely better but both are poor.
+
+**5. Recombination pools are not representative of deployment** (`scripts/53_pool_purity.py` →
+`POOL_PURITY.md`) — the session's most consequential finding, surfaced while chasing F06. Pools
+are built from the TRAIN split, and emotion+gesture were **fine-tuned on that split** (promoted
+2026-08-04). Purity (fraction of a GT bucket the cue model argmaxes correctly):
+
+| Cue | Fine-tuned? | Train | Val | Test | Train−Test |
+|---|---|---|---|---|---|
+| gesture | yes | **1.000** | 0.997 | 0.864 | +0.136 |
+| emotion | yes | 0.959 | 0.752 | 0.762 | +0.197 |
+| motion | **no** | 0.655 | 0.671 | 0.671 | −0.016 |
+
+Motion — the one model never promoted — has the only honest pool. **Fusion is therefore trained on
+gesture cues that are never wrong and tested on cues wrong 13.6% of the time.** This independently
+predicts the cue-attribution ordering (gesture 31.8% > emotion 29.5% > motion 17.6% > context
+10.1%): the model weights cues by how clean their training pools were, not by how reliable they
+are. Worst case `raise_hand`: train 1.000, **test 0.327** — fusion has never seen a mistaken
+raise_hand vector. Note **val pools are not the fix** (gesture val purity is still 0.997 — val is
+actor-disjoint but shares scenarios); the sound fix is out-of-fold prediction (refit each cue model
+K times holding out scenario groups, pool the held-out predictions), or calibrated per-class noise
+injection.
+
+**Net position for the thesis:** the ">70%" bar is met (0.7133, and human-level by field
+standards — humans score 71% on MIntRec2.0). "Fusion beats rules on accuracy" is **not**
+supportable and should be retired in favour of the axes where they diverge (T03 missing-cue, F02
+recall) plus the now-quantified fact that both are perception-limited. The defensible new
+contributions from today are the recombination **prior** and **pool-realism** analyses — both are
+general findings about rubric-driven augmentation, not artifacts of this dataset.
+
+**Next (not done):** re-test `family` allocation pre-registered at 10 seeds; out-of-fold pools;
+re-run Studies 1–3 paired-by-seed; re-transfer the embeddings given finding 2.
+
+
+## 2026-08-07 — [WIN-3060] — Conflict-holdout: the honest generalization number
+
+**Trigger:** user correctly identified that T02 (`SCENARIO_TEST_REPORT.md`) never actually tested
+generalization — recombination covers all 448 combos, so fusion had a synthetic labelled example
+of every "conflicting" combo it was then tested on. Proposed excluding conflicting combos from
+training entirely and testing zero-shot. Confirmed correct, built it.
+
+**Method** (`fusion/model/recombine_merged.py::classify_combos`, discussed and refined with the
+user): a combo is CONFLICTING if its rubric intent differs from the same (context,gesture,motion)'s
+intent under emotion='Neutral' — i.e. emotion measurably overrides the gesture's default reading.
+164 conflicting combos identified, reviewed against the user's own judgement via an interactive
+artifact-based table (all 164 rows, grouped by gesture) — confirmed matching their intuition.
+
+**v1 (failed, informatively):** excluded ALL 164 conflicting combos from BOTH synthetic
+recombination AND the 753 real training clips whose true tuple happened to be conflicting.
+Result: exactly 0.0% accuracy on every conflicting test — clean, but a red flag (a model that's
+merely *bad* at generalizing still gets some right by chance). Diagnosed: F02, F07, F08, F10 (4 of
+9 intent classes) are produced EXCLUSIVELY by an emotion overriding a gesture's default — they have
+no "calm/neutral" pathway anywhere in the rubric. So v1's `aligned_only` model had literally zero
+training exposure to 4 of 9 possible answers; 0% measured "can you name a class you were never
+shown," not compositional generalization. A genuine finding about the rubric's structure, but not
+the intended experiment.
+
+**v2 (the real result), per the user's explicit correction:** recombination is allowed to
+reinforce any conflicting combo already present in real TRAINING data (not new information, just
+more synthetic repeats of a pattern already there); real training runs unfiltered. Only combos
+with ZERO presence anywhere in training — 143 of 164, verified to cover all 9 classes and give
+healthy test coverage (372 vs 401 real test clips) — are truly held out.
+
+| Test set (real, headline) | n | `restricted` (never saw combo) | `full_reference` (saw it) | rules |
+|---|---|---|---|---|
+| Novel combo | 372 | **0.2849** | 0.6828 | 0.7634 |
+| Seen combo | 401 | 0.818 | 0.7955 | 0.7257 |
+
+**The generalization gap is large: +0.3979 accuracy (0.2849 → 0.6828) between never-having-seen a
+combo and having seen it.** This is the honest number the user's original critique was pointing
+at: fusion's conflict-resolution ability on `T02`/`SCENARIO_TEST_REPORT.md` comes overwhelmingly
+from recombination teaching it the specific answer, not from an independently-learned compositional
+rule. 28.5% is better than the ~10% floor for a 10-class problem (some transfer is happening — not
+zero), but nowhere near what direct supervision achieves. This CONFIRMS the user's hypothesis from
+the "is this pure research" discussion, now with real (non-circular) evidence rather than
+conceptual argument alone.
+
+**Secondary findings**: rules score 0.7634 on the same novel-combo clips — NOT 1.0, because this
+uses REAL (perception-noisy) cues, not oracle ones; the gap from 1.0 reflects perception error on a
+harder subset (fear/anger/disgust-heavy scenarios), consistent with everything already established
+about rules+real vs rules+oracle. On SEEN-combo clips, `restricted` (81.8%) edges out
+`full_reference` (79.6%) — plausibly because its smaller combo set gets more synthetic repetitions
+per combo (30,500 samples / 305 combos vs 44,800 / 448) — a specialization effect, not a
+contradiction.
+
+**Bottom line for the thesis**: the "fusion beats rules on conflict resolution" claim from T02
+needs to be qualified sharply — it holds for combos fusion was taught (a real, if narrower, result:
+`restricted` still beats rules 81.8% vs 72.6% here), but fusion's ability to handle a genuinely
+novel conflicting combination it was never shown is weak, well below both the taught-case number
+and rules' perception-limited-but-structurally-complete performance. Recombination teaches;
+it does not by itself confer independent reasoning.
+
+
+## 2026-08-07 (later) — [WIN-3060] — Phase 2 completes: real video degradation, resolved
+
+**Did:** re-ran Phase 2 (`scripts/44_video_degradation.py`) after the user restarted the machine to
+free memory — the two prior attempts (2026-08-06) both failed on this exact step (memory
+exhaustion loading the CLIP context model, `OSError: paging file too small`). Confirmed free RAM
+went from ~2GB to ~7.3GB before relaunching. **This time it worked**: 8/8 conditions completed
+(7 cleanly, 1 — `downsample_0.35` — hit a one-off shell-level exit 127 unrelated to the earlier
+memory bug, re-ran individually without issue).
+
+**Result: real pixel degradation reinforces Phase 1's finding, does not overturn it.**
+
+| Condition | Fusion | Rules |
+|---|---|---|
+| Clean | 0.6984 | 0.7778 |
+| Light/heavy blur | 0.6349 / 0.4603 | 0.6667 / 0.5397 |
+| Light/heavy darkness | 0.6667 / 0.5556 | 0.7619 / 0.6349 |
+| Light/heavy downsample | 0.6508 / 0.4921 | 0.6349 / 0.5079 |
+| JPEG compression | 0.5714 | 0.5714 |
+
+Rules ahead in 6/8 conditions, tied in 1, fusion ahead in 1 (downsample light, +0.016, n=63 — too
+small a sample/margin to claim). **Second negative result (after Phase 1 part B) for the "fusion
+is more robust to degraded input" hypothesis** — genuine pixel corruption tells the same story as
+simulated probability noise did.
+
+**One honest, useful side-finding**: observation rates stayed at 1.0 across nearly every
+condition — even heavy blur/downsampling — meaning the perception stack still found *something*
+to read, just less accurately; only the heaviest darkness condition actually dropped observation
+below 100% (emo 0.984, ges/mot 0.937). This is the first REAL (not scenario-designed, not
+simulated) missing-cue event produced anywhere in this investigation — contrast with the
+`SCENARIO_TEST_REPORT.md` finding that V3's "designed-missing" rows stayed 100% observed despite
+being scripted as absent.
+
+**Updated overall verdict, all phases now complete**: across Phase 1 (context/degradation/safety),
+Phase 2 (real degradation), and Phase 3 (sequence recombination), fusion did not demonstrate a
+general robustness or accuracy advantage over rules — 4 of 5 tests came back negative or tied.
+The two genuine, well-evidenced fusion advantages remain unchanged: **missing-cue robustness**
+(T03a, `SCENARIO_TEST_REPORT.md`: 46.4% vs 28.2% with gesture masked) and the **F02 safety fix**
+(2026-08-07 earlier entry: class-weighted loss now beats rules' emergency recall). That is the
+complete, honest, defensible set of claims from this investigation.
+
+
+## 2026-08-07 — [WIN-3060] — F02 recall fix (concrete win) + cue attribution (CAM-analogue)
+
+**Did:** two follow-ups to yesterday's mostly-negative Phase 1-3 investigation, targeting the one
+identified, actionable weakness and the interpretability gap.
+
+**F02 recall fix** (`fusion/model/train.py` gained a `class_weights` param on `CrossEntropyLoss`;
+`scripts/46_f02_recall_fix.py`). Phase 1 found fusion's F02 (emergency) recall CEILING across its
+entire threshold sweep (0.645) never reached rules' fixed-point recall (0.727) — a training-time
+deficiency, not a thresholding problem. Isolated intervention: only F02's loss weight changes,
+every other class stays at 1.0. Swept {1.0 (control), 2.0, 3.0, 5.0}, 3 seeds each:
+
+| F02 weight | Headline acc | F02 recall ceiling | Beats rules' 0.727? |
+|---|---|---|---|
+| 1.0 (baseline) | 0.7191 ± 0.0164 | 0.645 | no |
+| 2.0 | 0.7102 ± 0.0067 | 0.719 | no (close) |
+| **3.0** | 0.7045 ± 0.0093 | **0.736** | **yes** |
+| 5.0 | 0.7031 ± 0.0175 | **0.818** | **yes** (bigger margin, but recall @ rules' own precision level is actually LOWER than weight=3.0's — 0.678 vs 0.736 — so the higher ceiling comes with more false alarms, not a strictly better operating point) |
+
+**Concrete, well-evidenced win**: weight=3.0 or 5.0 both close the Phase 1 safety gap for a modest
+1.5-2 point headline-accuracy cost. **Recommend weight=3.0 as the better default** — smallest
+accuracy cost that still crosses rules' recall, and better recall-at-matched-precision than
+weight=5.0. weight=5.0 is the choice if you'd rather maximise the ceiling and accept more false
+alarms. Not yet promoted to the deployed checkpoint — this was a diagnostic sweep, not a
+final-model decision; see `docs/DECISIONS.md`.
+
+**Cue attribution** (`fusion/model/attribution.py`, `scripts/47_cue_attribution.py` ->
+`CUE_ATTRIBUTION.md`) — the CAM-analogue requested for the fusion architecture zoo. Literal Class
+Activation Mapping doesn't apply (needs spatial feature maps; the input is a 24-dim vector with no
+spatial extent) — built attention-weight extraction instead, which is the faithful transplant of
+the same idea (the CLS token's attention onto each modality token IS the model's own mixing
+coefficient, no approximation needed). Required manually replicating `TransformerEncoderLayer`'s
+`norm_first` forward, since `need_weights=False` is hardcoded on its internal fast path and isn't
+retrievable via a hook. Smoke-tested: masked (obs=0) modalities correctly get exactly 0 attention.
+
+Results: overall attention gesture(31.8%) > emotion(29.5%) > motion(17.6%) > context(10.1%).
+**Notable cross-validation**: context gets the lowest attention on EVERY intent (7.7-12%) —
+independently rediscovering, via a completely different method, what code-reading `rule_intent()`
+already showed in Phase 1 part A (context only matters in one branch). Per-intent breakdown is
+plausible throughout (F02/emergency elevates motion to 22.4%, above its 17.6% average — consistent
+with fleeing/step-back motion being diagnostic; F07/anger has the highest emotion weight of any
+class at 37.5%). Qualitative same-gesture-different-emotion spotlight table came out thin (only
+2/10 target rows had headline test clips — the same test-split coverage limit T04 hit in
+`SCENARIO_TEST_REPORT.md`), reported honestly rather than padded.
+
+**Overall verdict on the full 2026-08-06/07 investigation**: the sweeping "fusion beats rules on
+accuracy" story is not supported by today's evidence (Phase 1 A/B negative, Phase 3 a tie). What
+IS now solidly evidenced: fusion wins clearly on missing-cue robustness (T03a,
+`SCENARIO_TEST_REPORT.md`: 46.4% vs 28.2% with gesture masked), and — after today's fix — fusion
+has a genuine, tunable safety capability rules structurally cannot have (adjustable recall/
+precision tradeoff for emergency detection, now demonstrably beating rules' fixed point). That is
+the defensible thesis claim going forward, not blanket superiority.
+
+
+## 2026-08-06 — [WIN-3060] — "Why does fusion only tie rules" investigation (Phases 1-3)
+
+**Trigger:** user flagged that the project's core claim — learned fusion beats rule-based
+reasoning — wasn't landing: headline accuracy is fusion 0.7191 vs rules 0.712, a near-tie, not
+the decisive win the thesis narrative assumed.
+
+**Root-cause diagnosis (before any new code):** every clip's intent label comes from its V3
+scenario row, and that row's intent is `rule_intent(true_cues)` — i.e. the rubric wrote the
+labels. A rule system given true cues is therefore Bayes-optimal by construction (confirmed
+independently: rules+oracle = 1.000, exactly the ceiling, `GAP_DECOMPOSITION_MERGED.md`). Rules
+can only lose points to *perception* error, never reasoning error. Recombination then trains
+fusion on `rule_intent()` labels — textbook knowledge distillation with rules as teacher. Clean-
+data accuracy was never a fair arena for "fusion beats rules"; the real question is where a
+hand-written argmax rubric structurally cannot compete.
+
+**Phase 1 — robustness battery** (`scripts/43_robustness_battery.py` → `ROBUSTNESS_BATTERY.md`),
+three tests:
+- **A. Fair context**: `rule_predict` hands rules the clip's TRUE context; fusion must infer it.
+  Built a predicted-context variant. Result: **0 clips changed** — `rule_intent` branches on
+  context in exactly one place (`raise_hand`), so the "advantage" is real but structurally
+  worthless. Hypothesis closed, cleanly negative.
+- **B. Degradation sweep**: Gaussian log-prob noise (sigma 0→2.0) applied identically to fusion
+  and rules. Expected rules' `argmax` to break down faster than fusion's soft weighting. Result:
+  **mixed, not decisive** — roughly tied through moderate noise, fusion only ~1-2 points ahead at
+  the highest noise levels. Does not support a clean "fusion is more robust to noise" claim.
+- **C. F02 safety operating point**: rules are a single fixed point (P=0.481, R=0.727, not
+  adjustable); fusion emits a probability, so its threshold is tunable. Result: **fusion's recall
+  ceiling across the ENTIRE threshold sweep (0.645) never reaches rules' recall (0.727)** — the
+  "tunable safety dial" argument does not hold empirically. This is a genuine, specific fusion
+  weakness (the model itself under-predicts F02), consistent with F02 rows failing even under
+  ORACLE cues in the gap decomposition and fusion losing to rules on the F02-missing-gesture rows
+  in `SCENARIO_TEST_REPORT.md`. Caught and corrected an overclaiming first-draft conclusion in the
+  report before it became a wrong thesis claim.
+
+**Phase 2 — real video degradation** (`scripts/44_video_degradation.py`) — **PAUSED, unresolved.**
+Corrupts actual video pixels (blur/dark/downsample/jpeg) before Holistic/face-detection/CLIP run,
+re-extracting through the real perception stack rather than simulating cue noise. Two attempts,
+both failed:
+1. Original single-process design leaked memory across ~430 sequential clip decodes (no release
+   point for MediaPipe/OpenCV/CUDA state), crashed via OOM→segfault, and lost all 3 completed
+   conditions' results because they were only written to disk at the end (a real bug — fixed for
+   future use, but too late for that run).
+2. Rewrite ran each of 8 conditions as an isolated subprocess with incremental result-writing
+   (fixes the data-loss bug) — but ALL 8 failed immediately on `OSError: paging file too small`.
+   Diagnosed: this machine had ~2GB free RAM of 16GB at the time, with 5 orphaned Python processes
+   left over from attempt 1 still holding memory. This is a genuine environment/resource
+   constraint, not a code defect. User chose to deprioritize rather than debug further right now.
+   Script is fixed and ready to resume on a machine/moment with more headroom.
+
+**Phase 3 — trajectory recombination for R3** (`fusion/model/recombine_sequences.py`,
+`scripts/45_sequence_recombination.py` → `SEQUENCE_RECOMBINATION.md`). The one experiment that can
+genuinely exceed rules on accuracy: rules see one pooled snapshot and cannot use temporal
+dynamics at all. Study 2 (2026-08-05) found R3 scoring far below R1 (0.533 vs 0.719) but flagged
+it as confounded — R3 never got a recombination analogue. Built one: for each of 448 combos,
+stitch a synthetic per-window TRAJECTORY from four real per-clip window sequences (one per
+modality, ground-truth indexed, independently resampled to a shared target length via
+`uniform_indices`) rather than the pooled version's single mean vector. 44,800 synthetic
+trajectories, 21/21 class bins covered.
+
+**Result: R3 causal jumps from 0.5329±0.027 to 0.7136±0.017 (+0.181)** — closes nearly the ENTIRE
+augmentation gap. But the delta vs R1 (0.7191) is -0.0055, **within seed noise — a tie, not a
+win**. Confirms the Study 2 confound diagnosis was correct (coverage, not order-awareness, was
+the dominant factor) but does NOT establish that this architecture exploits temporal order beyond
+what pooling already captures. Bidirectional (offline ceiling) scored 0.7031±0.005, slightly
+BELOW causal — a mildly counterintuitive result attributed to the different readout mechanisms
+(causal reads one strong final-position token; bidi masked-mean-pools), not investigated further.
+
+**Overall verdict on the day's investigation:** three of four executed tests (A, B, Phase 3) came
+back negative-to-neutral on the "fusion decisively beats rules" question; one (C, F02 safety)
+surfaced a genuine, specific, and actionable fusion weakness. This is reported as a real result,
+not spun positively — the project's honest finding is that on rubric-generated labels, learned
+fusion's advantage over rules is narrow and situational (strongest on gesture-missing robustness,
+per the earlier `SCENARIO_TEST_REPORT.md` T03a sweep: 46.4% vs 28.2% with gesture masked), not the
+sweeping "fusion is better" story originally hypothesized.
+
+**Concrete next step identified, not yet built:** F02 recall looks specifically fixable via
+class-weighted loss during fusion training (the same intervention that worked for emotion/gesture
+unimodal fine-tuning, `unimodal-finetune-promotion` memory) — a scoped, plausible fix, not
+evaluated here.
+
+
+## 2026-08-05 — [WIN-3060] — Fusion architecture zoo + temporal representation study
+
+**Did:** built and ran three studies answering "what improves the fusion result further,
+and clip vs window for Jetson deployment" (user request, following the promotion cycle below).
+
+**New code:** `fusion/model/fusion_zoo.py` (GMU, LMF, cross-attention, channel-attention/CAM —
+all share `AttentionFusion`'s `forward(x[B,24], obs[B,4])` contract), `fusion/model/gbt.py`
+(LightGBM head), `fusion/model/sequences.py` + `fusion/model/temporal.py` (window-SEQUENCE
+representation + causal/bidirectional temporal transformer, built straight from
+`unimodal_windows.parquet`'s per-window rows — no re-extraction needed), `fusion/model/train.py`
+gained a `model_factory` param so every zoo head reuses the identical augmentation/selection loop.
+`lightgbm` installed into `.venv` (no protobuf dependency, safe with the pinned mediapipe/onnx).
+Scripts: `38_fusion_architectures.py`, `39_temporal_representation.py`, `40_window_size_sweep.py`.
+
+**Two real bugs found and fixed during Study 2** (documented since they'd have produced a
+confidently-wrong deployment recommendation if missed):
+1. **Causal-attention collapse.** `TemporalFusion`'s causal model always converged to a
+   single-class prediction (val_acc identical to 4 decimals across all seeds). Root cause:
+   sequences are right-aligned (padding at the start, real data at the end, so the last position
+   is always the most recent real window — needed for zero-retrain trailing-K eval). Combining the
+   causal triangular mask with the padding key-mask meant every PADDING query position had zero
+   visible keys (causal blocks future, padding-mask blocks the only keys still in range) →
+   NaN-adjacent degenerate attention at those positions → corrupted the real readout position via
+   later self-attention layers. Fixed by dropping the key-padding mask entirely for the causal
+   path — the causal mask alone guarantees every query sees at least itself, and only the
+   guaranteed-real last position is ever read.
+2. **Headline-eval mismatch.** R3's test split was built from the raw 1003-row test split, not
+   the 979-row `headline_eval` subset R1/R2 use — an apples-to-oranges comparison. Fixed by
+   filtering `real` to headline-only test rows before building R3's sequences.
+
+**Study 1 — architecture ablation** (`FUSION_ARCHITECTURES.md`, clip-pooled input, `full` recipe,
+3 seeds): incumbent self-attention stays best (0.7191, beats rules 0.712). **GMU is the standout
+secondary finding** — 0.7065 (statistically close to the incumbent) with **8x fewer parameters**
+(8,970 vs 70,090) and far tighter seed variance (±0.0024 vs ±0.0164) — a strong Jetson candidate
+if the last ~0.01 acc isn't worth 8x the params. LMF 0.6994, cross-attention 0.699, GBT 0.684 (no
+architecture engineering at all, notably strong), concat-MLP floor 0.6837, channel-attention/CAM
+weakest at 0.6581. **Confirms the gap decomposition's prediction: fusion capacity was never the
+bottleneck** — architectures cluster within ~0.06 of each other once recombination is applied.
+
+**Study 2 — temporal representation** (`TEMPORAL_REPRESENTATION.md`): R1 clip-pool (mean over ALL
+of a clip's windows) wins at 0.7191. R2 (train+predict per-window, majority-vote to a clip
+decision) close behind at 0.7109 — re-confirms `07_evaluation.md` §7.2's 2026-07-28 rule
+(clip-mean beats per-window-vote), but the margin shrank from 0.032 to 0.008 now that recombination
+augments BOTH. R3 (order-aware sequence transformer, bidi and causal) scored much lower (~0.533)
+— **but this is confounded, not a clean verdict against temporal modeling**: R3 has no
+recombination analogue (out of scope for v1), so it trains on ~30x fewer augmented samples than
+R1/R2; its high val-acc (~0.86-0.90) next to a much lower headline-test score is the same
+real-vs-synthetic coverage gap recombination was built to close for R1. The causal trailing-K
+buffer sweep (K=4/8/16/40 windows = 1.07/2.13/4.27/10.67s, same model, isolates buffer length only)
+showed accuracy flat from K=8 through the full buffer — **short buffers suffice**, informative
+regardless of the R3 confound.
+
+**Study 3 — window-size (lookback span) sweep** (`WINDOW_SIZE_SWEEP.md`, re-run of §7.9's old
+sweep on `final_merged` + recombination, 3 seeds vs the original's 1): confirms **shorter spans
+are still better** — x0.5 (1.07s/1.0s gesture/motion span) scores 0.7252, beating deployed x1.0's
+0.7191; x1.5/x2.0 progressively worse (0.7004/0.6782). Same direction as the old table's dramatic
+0.976→0.756 collapse, but a much gentler slope — recombination stabilised the whole span range.
+
+**Deployment recommendation:** keep self-attention + clip-pool (R1) as the shipped architecture —
+best-verified, best-augmented; GMU is the one worth a second look if Jetson params/latency get
+tight. Shorten the gesture/motion lookback span toward x0.5 (validated twice now, old table and
+this one). R3 (temporal sequence modeling) is NOT ruled out — revisit only after a recombination
+analogue exists for sequences.
+
+**Next (not done, flagged as follow-up):** build a recombination-for-sequences approach (synthetic
+window trajectories, not just synthetic pooled vectors) before drawing any final conclusion on
+whether order-aware temporal modeling helps.
+
+
 ## 2026-08-04 (latest) — [WIN-3060] — Promotion complete: re-extraction + fusion retrain closes the loop
 
 **Did:** completed the 3-step plan from the previous entry.

@@ -248,3 +248,88 @@ needs the rubric supplied to it through augmentation.
   thesis figure.
 - **`missing_mode="token"` is retained** only as the ablation evidence; the
   deployed path is `exclude`. Do not switch without re-running the sweep.
+
+---
+
+## 6.9 Architecture zoo + temporal representation, on `data/final_merged` (2026-08-05)
+
+§6.7's "the lever is recombination, not architecture" prediction was tested directly once
+`data/final_merged` + the promoted unimodal checkpoints + recombination (§6.4's third
+augmentation, finally scoped correctly per §6.7) were all in place. Full results/code:
+`results/realworld_eval_merged/FUSION_ARCHITECTURES.md`,
+`fusion/model/fusion_zoo.py` (GMU, LMF, cross-attention, channel-attention/CAM), `fusion/model/gbt.py`.
+
+**Architecture roster, headline clip-acc, `full` recipe, 3 seeds:**
+
+| Model | Params | Clip acc |
+|---|---|---|
+| Rule-based | — | 0.712 |
+| Self-attention (incumbent, unchanged from §6.2) | 70,090 | **0.7191** |
+| GMU (gated) | 8,970 | 0.7065 (std 0.0024 — far tighter than the incumbent's 0.0164) |
+| LMF (low-rank tensor) | 6,730 | 0.6994 |
+| Cross-attention | 69,834 | 0.699 |
+| GBT (LightGBM) | — | 0.684 |
+| Concat-MLP (floor) | 12,618 | 0.6837 |
+| Channel-attention (CAM) | 4,896 | 0.6581 |
+
+**Prediction confirmed**: architectures cluster within ~0.06 of each other once recombination is
+applied — capacity was never the bottleneck, matching §6.7's diagnosis exactly. The incumbent
+stays deployed; GMU is the noted fallback for a Jetson params/latency squeeze (8x smaller, far
+more seed-stable, ~0.01 less accurate).
+
+**Temporal representation** (`results/realworld_eval_merged/TEMPORAL_REPRESENTATION.md`): the
+clip-pooled input (R1, i.e. everything in §6.2-6.8) still wins over per-window training (R2,
+0.7109) and an order-aware sequence transformer (R3, ~0.533) — but R3's number is **confounded**,
+not a fair test: it has no recombination analogue (synthetic per-clip cue vectors don't extend to
+synthetic *trajectories*), so it trains on ~30x fewer augmented samples than R1/R2. Not a verdict
+against temporal modeling; a flagged follow-up (build recombination-for-sequences first).
+
+**Lookback span** (`results/realworld_eval_merged/WINDOW_SIZE_SWEEP.md`): re-running §7.9's old
+sweep on the current pipeline confirms shorter spans still win (x0.5 = 0.7252 > deployed x1.0's
+0.7191), with a much gentler slope than the old table thanks to recombination.
+
+---
+
+## 6.10 ⚠ Statistical power — read this before quoting any table above (2026-08-08)
+
+Every comparison in §6.9, and the headline in §6.6, was measured at **3 seeds**. Measuring the
+per-seed spread properly (`scripts/49_significance.py`, 10 seeds of the deployed `full` recipe)
+gives a standard deviation of **0.0160** on headline clip accuracy. That fixes how large a
+difference 3 seeds can actually resolve:
+
+| Seeds | 95% CI half-width on the mean | Smallest resolvable difference |
+|---|---|---|
+| 3 | ±0.0397 | ~0.079 |
+| 5 | ±0.0199 | ~0.040 |
+| 10 | ±0.0114 | ~0.023 |
+| 20 | ±0.0075 | ~0.015 |
+
+Against that threshold, the differences the tables above are read from:
+
+| Claimed comparison | Difference | Resolvable at 3 seeds? |
+|---|---|---|
+| self-attention vs GMU | 0.0126 | no |
+| self-attention vs cross-attention | 0.0201 | no |
+| self-attention vs concat-MLP floor | 0.0354 | no |
+| window x0.5 vs x1.0 | 0.0061 | no |
+| R1 clip-pool vs R2 per-window | 0.0082 | no |
+| fusion vs rules | 0.0071 | no |
+
+**None of them are.** The architecture roster's entire spread, best (0.7191) to worst (0.6581),
+is 0.061 — still below the ~0.079 that 3 independent seeds can distinguish. This does not make
+the conclusions wrong, but it does mean **they are not established by the evidence as collected**:
+"self-attention is the best head", "shorter spans are better", and "clip-pool beats per-window"
+are all currently indistinguishable from seed noise.
+
+Two things follow, and both are cheap:
+1. **Compare configs paired by seed**, not as independent means — train every config on the same
+   seed set and test the per-seed *differences*. Common seed effects cancel, so this resolves far
+   smaller gaps at the same cost. It could not be applied retroactively here because the Study
+   1–3 JSONs saved only aggregated mean/std; **per-seed values should be persisted from now on**
+   (`scripts/49_significance.py` does).
+2. **Raise the seed count** for any comparison that is going into the thesis as a claim.
+
+The headline itself has already been re-measured this way: §6.6's 0.7191 was a 3-seed artifact
+(seeds 0,1,2 happen to include seed 0, the best of ten), and the honest figure is
+**0.7133 ± 0.0160**, statistically indistinguishable from rules — see
+`results/realworld_eval_merged/SIGNIFICANCE.md`.
