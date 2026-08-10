@@ -49,6 +49,8 @@ EXPERIMENTS = (
     "02_fusion",          # attention fusion + ablations
     "03_diagnostics",     # oracle/gap decomposition, clip-vs-window, sweeps
     "04_recombination",   # rubric-driven augmentation
+    "05_fusion_architectures",   # Study 1: GBT/GMU/LMF/cross-attn/CAM roster (scripts/38)
+    "06_temporal_representation",  # Study 2: clip-pool vs causal-window vs sequence (scripts/39)
 )
 
 DATASETS = ("old", "final", "final_merged")

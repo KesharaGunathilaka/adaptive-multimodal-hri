@@ -43,7 +43,16 @@ def _masked_val_acc(model, Xva, obs_va, yva, device):
 
 def train_fusion(splits, seed=0, dropout_p=0.0, jitter_sigma=0.0, extra=None,
                  epochs=80, patience=10, lr=1e-3, device=None,
-                 select_masked=False, missing_mode="token"):
+                 select_masked=False, missing_mode="token", model_factory=None,
+                 class_weights=None):
+    """`model_factory`: optional no-arg callable returning an nn.Module with the
+    `forward(x[B,24], obs[B,4]) -> logits[B,10]` contract (see
+    `fusion/model/fusion_zoo.py`). Defaults to `AttentionFusion(missing_mode)`,
+    so existing callers (scripts/30) are unchanged.
+
+    `class_weights`: optional [10] tensor/array passed to `CrossEntropyLoss`'s
+    `weight` -- 2026-08-07 F02-recall fix (`scripts/46_f02_recall_fix.py`),
+    same lever as the emotion/gesture unimodal fine-tunes."""
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -54,9 +63,14 @@ def train_fusion(splits, seed=0, dropout_p=0.0, jitter_sigma=0.0, extra=None,
     Xva, obs_va = frame_arrays(splits["val"])
     yva = splits["val"]["y"].to_numpy()
 
-    model = AttentionFusion(missing_mode=missing_mode).to(device)
+    if model_factory is None:
+        model = AttentionFusion(missing_mode=missing_mode).to(device)
+    else:
+        model = model_factory().to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=0.05)
+    w = (torch.as_tensor(class_weights, dtype=torch.float32, device=device)
+        if class_weights is not None else None)
+    loss_fn = torch.nn.CrossEntropyLoss(weight=w, label_smoothing=0.05)
 
     best_score, best_acc, best_state, bad = 0.0, 0.0, None, 0
     for _ in range(epochs):

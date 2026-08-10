@@ -51,6 +51,15 @@ MP_TO_NTU = {0: 3, 11: 4, 12: 8, 13: 5, 14: 9, 15: 6, 16: 10,
 
 
 class PerFrameExtractor:
+    # `extract_embeddings_only` only: sources at/above this width or height use
+    # the cheap small-frame-tiled face-detection fallback instead of
+    # `detect_face_box`'s normal full-resolution tiling. 3000 sits between
+    # this dataset's phone_1080p (1920) and phone_4k (3840) sources, so 1080p
+    # keeps the full-precision path (never the slow one) and only 4K sources
+    # take the tradeoff (see `extract_embeddings_only`'s docstring).
+    _HIRES_TILE_LIMIT = 3000
+
+
     def __init__(self, device=None):
         import mediapipe as mp
 
@@ -88,20 +97,37 @@ class PerFrameExtractor:
     # ────────────────────────────────────────────────────────────────────
     @torch.no_grad()
     def _emotion_batch(self, crops):
-        """List of BGR face crops -> [N,7] softmax."""
-        out = []
+        """List of BGR face crops -> ([N,7] softmax, [N,1280] penultimate
+        embedding). The embedding is torchvision MobileNetV2's own
+        pooled-feature input to `classifier` (features -> global avgpool ->
+        flatten) -- splitting its forward into these two explicit steps costs
+        nothing extra (same compute the softmax already required), added
+        2026-08-08 for embedding-level fusion (`fusion/fusion-engine-embeddings`
+        design note: penultimate-layer features retain the uncertainty argmax
+        collapses)."""
+        probs_out, embed_out = [], []
         for i in range(0, len(crops), EMO_BATCH):
             batch = torch.stack([
                 self.emo_tf(Image.fromarray(cv2.cvtColor(c, cv2.COLOR_BGR2RGB)))
                 for c in crops[i:i + EMO_BATCH]]).to(self.device)
-            out.append(torch.softmax(self.emo_model(batch), dim=1).cpu().numpy())
-        return np.concatenate(out) if out else np.zeros((0, 7), np.float32)
+            feat = self.emo_model.features(batch)
+            embed = torch.flatten(torch.nn.functional.adaptive_avg_pool2d(feat, 1), 1)
+            probs_out.append(torch.softmax(self.emo_model.classifier(embed), dim=1)
+                             .cpu().numpy())
+            embed_out.append(embed.cpu().numpy())
+        probs = np.concatenate(probs_out) if probs_out else np.zeros((0, 7), np.float32)
+        embed = (np.concatenate(embed_out) if embed_out
+                else np.zeros((0, 1280), np.float32))
+        return probs, embed.astype(np.float32)
 
     @torch.no_grad()
     def _context_batch(self, frames_bgr):
-        """List of BGR frames -> [N,5] raw CLIP scene softmax (no smoothing)."""
+        """List of BGR frames -> ([N,5] raw CLIP scene softmax (no smoothing),
+        [N,512] L2-normalised CLIP image embedding). The embedding was already
+        being computed and discarded before the text-similarity step; now
+        returned too (2026-08-08, same rationale as `_emotion_batch`)."""
         m = self.scene
-        out = []
+        probs_out, embed_out = [], []
         for i in range(0, len(frames_bgr), EMO_BATCH):
             imgs = torch.stack([
                 m.preprocess(Image.fromarray(cv2.cvtColor(f, cv2.COLOR_BGR2RGB)))
@@ -110,11 +136,24 @@ class PerFrameExtractor:
             emb = emb / emb.norm(dim=-1, keepdim=True)
             logits = 100.0 * emb @ m.text_embs.T
             probs = torch.softmax(logits[:, :len(m.classes)], dim=1)
-            out.append(probs.cpu().numpy())
-        return np.concatenate(out) if out else np.zeros((0, len(m.classes)), np.float32)
+            probs_out.append(probs.cpu().numpy())
+            embed_out.append(emb.cpu().numpy())
+        probs = (np.concatenate(probs_out) if probs_out
+                else np.zeros((0, len(m.classes)), np.float32))
+        embed = (np.concatenate(embed_out) if embed_out
+                else np.zeros((0, 512), np.float32))
+        return probs, embed.astype(np.float32)
 
     # ────────────────────────────────────────────────────────────────────
-    def extract_clip(self, video_path):
+    def extract_clip(self, video_path, frame_transform=None):
+        """`frame_transform`, if given, is applied to each raw BGR frame right
+        after decode -- before Holistic/face-detection/CLIP ever see it. Used
+        by `scripts/44_video_degradation.py` (Phase 2 robustness study,
+        2026-08-06) to corrupt REAL pixels (blur/darken/downsample/compress)
+        rather than simulating cue noise post-hoc, closing the honesty gap
+        flagged in `07_evaluation.md` §7.5 (designed-missing rows were found
+        to have 100% detection anyway -- nothing was actually corrupted).
+        None (default) reproduces the exact original behaviour."""
         cap = cv2.VideoCapture(str(video_path))
         if not cap.isOpened():
             raise IOError(f"cannot open {video_path}")
@@ -131,6 +170,8 @@ class PerFrameExtractor:
             ret, frame = cap.read()
             if not ret:
                 break
+            if frame_transform is not None:
+                frame = frame_transform(frame)
             h, w = frame.shape[:2]
             scale = MAX_SIDE / max(h, w)
             small = cv2.resize(frame, (int(w * scale), int(h * scale))) if scale < 1 else frame
@@ -184,21 +225,131 @@ class PerFrameExtractor:
 
         T = t
         emotion_probs = np.full((T, len(self.emotion_labels)), np.nan, np.float32)
+        emotion_embed = np.full((T, 1280), np.nan, np.float32)
         if face_crops:
-            emotion_probs[face_frame_idx] = self._emotion_batch(face_crops)
+            ep, ee = self._emotion_batch(face_crops)
+            emotion_probs[face_frame_idx] = ep
+            emotion_embed[face_frame_idx] = ee
         gesture_feats = (self._g_build(np.stack(pose_arr), np.stack(lh_arr),
                                        np.stack(rh_arr))
                          if T else np.zeros((0, 185), np.float32))
-        context_probs = self._context_batch(ctx_frames)
+        context_probs, context_embed = self._context_batch(ctx_frames)
 
         return {
             "emotion_probs": emotion_probs,
+            "emotion_embed": emotion_embed,
             "gesture_feats": gesture_feats.astype(np.float32),
             "pose_img": np.stack(pose_arr) if T else np.zeros((0, 33, 4), np.float32),
             "pose_valid": np.array(pose_valid, bool),
             "face_valid": np.array(face_valid, bool),
             "joints25": np.stack(joints_list) if T else np.zeros((0, 25, 3), np.float32),
             "context_probs": context_probs,
+            "context_embed": context_embed,
+            "context_frames": np.array(ctx_frame_idx, np.int64),
+            "fps": np.float32(fps),
+            "n_frames": np.int64(T),
+        }
+
+    # ────────────────────────────────────────────────────────────────────
+    def extract_embeddings_only(self, video_path, frame_transform=None):
+        """Lean pass for embedding-level fusion (2026-08-08): emotion +
+        context penultimate embeddings only, WITHOUT running MediaPipe
+        Holistic. Holistic (~150-200ms/frame, methodology doc §8) is the
+        dominant cost of `extract_clip` and is not needed here -- emotion's
+        face crop comes from the separate, cheap `FaceDetection` model
+        (`self.face_det`, ~14ms/frame), and context sampling needs only the
+        resized frame. Gesture/motion embeddings are NOT produced here; they
+        are derived in Pass 2 from the EXISTING `gesture_feats`/`joints25`
+        already cached by `extract_clip`, so no video is re-decoded for them.
+
+        For high-resolution sources (width or height >= `_HIRES_TILE_LIMIT`),
+        uses face detection on `small` for ALL THREE of `detect_face_box`'s
+        tiers, including its tiled-CLAHE fallback (normally tiled on the
+        FULL-resolution frame) -- found live 2026-08-08 on a 4K ("phone_4k",
+        3840x2160) clip whose subject faces away from camera for the entire
+        168-frame clip: every frame hit that fallback (full-res CLAHE + 4x
+        FaceDetection.process() on ~2500x1400 tiles), costing 54 MINUTES for
+        one clip; 228 more 4K clips were queued when this was caught. Below
+        the resolution limit, `detect_face_box` runs completely UNCHANGED
+        (full contract, full-res fallback) -- this was never the slow path at
+        moderate resolutions, so there is no reason to trade any precision
+        there. When the fast path IS used, `detect_face_box(self.face_det,
+        small, small)` (passing `small` for both args) runs the identical
+        3-tier logic entirely on the downscaled frame; the returned box is
+        rescaled back to original pixel coordinates below. Measured cost of
+        this tradeoff on the pathological clip: emotion_probs match on frames
+        resolved by tier 1/2 (identical in both paths -- they only ever look
+        at `small`), max |diff| 0.287 on the minority of frames that needed
+        tier 3, where box-coordinate rescaling amplifies any small-frame
+        detection error ~6x. Aggregate window-pooling should absorb most of
+        this; `sanity_check` in `scripts/54_extract_embeddings.py` (checked
+        on 1/N clips) will flag it if it ever costs more than that.
+
+        Returns a subset of `extract_clip`'s keys: emotion_probs/embed,
+        face_valid, context_probs/embed, context_frames, fps, n_frames.
+        `frame_transform` behaves as in `extract_clip` (video-degradation
+        studies)."""
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise IOError(f"cannot open {video_path}")
+        fps = cap.get(cv2.CAP_PROP_FPS) or 15.0
+        ctx_every = max(1, round(fps / CONTEXT_HZ))
+
+        face_valid = []
+        face_crops, face_frame_idx = [], []
+        ctx_frames, ctx_frame_idx = [], []
+
+        t = 0
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            if frame_transform is not None:
+                frame = frame_transform(frame)
+            h, w = frame.shape[:2]
+            scale = MAX_SIDE / max(h, w)
+            small = cv2.resize(frame, (int(w * scale), int(h * scale))) if scale < 1 else frame
+
+            if max(h, w) >= self._HIRES_TILE_LIMIT:
+                box = self._emo.detect_face_box(self.face_det, small, small)
+                if box is not None:
+                    sh, sw = small.shape[:2]
+                    sy, sx = h / sh, w / sw
+                    bx, by, bbw, bbh = box
+                    box = (int(bx * sx), int(by * sy), int(bbw * sx), int(bbh * sy))
+            else:
+                box = self._emo.detect_face_box(self.face_det, frame, small)
+            ok = False
+            if box is not None:
+                x, y, bw, bh = box
+                crop = frame[y:y + bh, x:x + bw]
+                if crop.size:
+                    face_crops.append(crop)
+                    face_frame_idx.append(t)
+                    ok = True
+            face_valid.append(ok)
+
+            if t % ctx_every == 0:
+                ctx_frames.append(small.copy())
+                ctx_frame_idx.append(t)
+            t += 1
+        cap.release()
+
+        T = t
+        emotion_probs = np.full((T, len(self.emotion_labels)), np.nan, np.float32)
+        emotion_embed = np.full((T, 1280), np.nan, np.float32)
+        if face_crops:
+            ep, ee = self._emotion_batch(face_crops)
+            emotion_probs[face_frame_idx] = ep
+            emotion_embed[face_frame_idx] = ee
+        context_probs, context_embed = self._context_batch(ctx_frames)
+
+        return {
+            "emotion_probs": emotion_probs,
+            "emotion_embed": emotion_embed,
+            "face_valid": np.array(face_valid, bool),
+            "context_probs": context_probs,
+            "context_embed": context_embed,
             "context_frames": np.array(ctx_frame_idx, np.int64),
             "fps": np.float32(fps),
             "n_frames": np.int64(T),
