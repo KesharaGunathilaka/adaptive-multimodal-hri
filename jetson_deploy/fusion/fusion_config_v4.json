@@ -1,0 +1,59 @@
+{
+  "created": "2026-09-02T22:42:11.667450",
+  "spec_version": "v4",
+  "arch": "AttentionFusion d=64 heads=4 layers=2 ff=128 pool=cls missing_mode=exclude modality_dims={emotion:5,gesture:8,context:2}",
+  "chosen_seed": 0,
+  "masked_val_score": 0.7314,
+  "test_clip_acc": 0.8072,
+  "n_seeds_tried": 10,
+  "training": {
+    "dropout_p": 0.7,
+    "dropout_scope": "recorded rows only",
+    "augmentation": "full-rubric, all 80 combos, 300/combo, 24000 synthetic rows",
+    "class_weights": "inverse frequency (train split)"
+  },
+  "intents": [
+    "F01",
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F10"
+  ],
+  "emotion_superclasses": [
+    "alarm",
+    "hostile",
+    "positive",
+    "low",
+    "neutral"
+  ],
+  "emotion_superclass_map": {
+    "Fear": "alarm",
+    "Surprise": "alarm",
+    "Anger": "hostile",
+    "Disgust": "hostile",
+    "Happy": "positive",
+    "Sad": "low",
+    "Neutral": "neutral"
+  },
+  "gesture_labels": [
+    "idle",
+    "wave",
+    "point",
+    "thumbs_up",
+    "thumbs_down",
+    "beckoning",
+    "raise_hand",
+    "both_hands_up"
+  ],
+  "context_labels": [
+    "classroom",
+    "kitchen"
+  ],
+  "input": "x[15]=emo_super(5)|ges(8)|ctx(2), obs[3] float 1/0, order=[emotion,gesture,context]",
+  "note_motion": "motion is DELIBERATELY EXCLUDED -- measured 0.435 accuracy on held-out footage and -0.013 value to intent accuracy (see docs/FUSION_V4_METHOD_GUIDE.md). Do not feed a motion cue into this model.",
+  "note_context": "the fusion context token only knows classroom/kitchen. For any other scene (hospital, museum, ...) mark context UNOBSERVED (obs[2]=0) rather than passing a wrong one-hot."
+}
