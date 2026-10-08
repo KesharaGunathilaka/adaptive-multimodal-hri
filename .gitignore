@@ -47,3 +47,12 @@ mlruns.db-journal
 
 report/
 /fusion/fusion-engine-embeddings
+
+# Pitch media and build outputs (regenerate with pitch_video/*.py)
+pitch_video/**/*.mp4
+pitch_video/**/*.wav
+pitch_video/_build*/
+
+# Annotation kit: clips are large; the answer key must not reach annotators
+results/fusion_v2/annotation_kit/videos/
+results/fusion_v2/annotation_kit/KEY_do_not_share.csv
