@@ -1,0 +1,2 @@
+{"t": 0.8, "why": "first", "intent": "F04", "action": "A05", "action_text": "Offer task guidance / answer, supportive tone", "confidence": 0.6383666666666666, "emergency": false, "fallback": false}
+{"t": 2.93, "why": "window", "intent": "F04", "action": "A05", "action_text": "Offer task guidance / answer, supportive tone", "confidence": 0.9544125, "emergency": false, "fallback": false}

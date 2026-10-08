@@ -1,0 +1,3 @@
+{"t": 0.3, "why": "emergency", "intent": "F02", "action": "A02", "action_text": "Halt all motion + fire/smoke alert", "confidence": 0.971, "emergency": true, "fallback": false}
+{"t": 2.43, "why": "window", "intent": "F02", "action": "A02", "action_text": "Halt all motion + fire/smoke alert", "confidence": 0.97115, "emergency": true, "fallback": false}
+{"t": 4.57, "why": "window", "intent": "F02", "action": "A02", "action_text": "Halt all motion + fire/smoke alert", "confidence": 0.9712375, "emergency": true, "fallback": false}

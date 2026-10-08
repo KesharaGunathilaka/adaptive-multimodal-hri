@@ -1,0 +1,2 @@
+{"t": 0.8, "why": "first", "intent": "F07", "action": "A08", "action_text": "Calm assistance, soft tone (de-escalation)", "confidence": 0.9901333333333332, "emergency": false, "fallback": false}
+{"t": 2.95, "why": "window", "intent": "F07", "action": "A08", "action_text": "Calm assistance, soft tone (de-escalation)", "confidence": 0.9902999999999997, "emergency": false, "fallback": false}
