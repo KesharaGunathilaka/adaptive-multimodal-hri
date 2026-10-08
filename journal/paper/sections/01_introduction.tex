@@ -1,0 +1,103 @@
+\section{Introduction}\label{sec:intro}
+
+Service robots are moving into spaces that were designed for people:
+classrooms, kitchens, hospital wards and offices. In these settings a robot
+that only executes explicit commands is of limited use. People rarely address a
+machine with formal instructions; they wave, point, frown, give a thumbs-up or
+simply slump at a desk, and they expect the systems around them to respond
+sensibly. Humans read such behaviour by combining several channels at once
+\citep{argyle1988bodily}: a facial expression qualifies a gesture, and the
+setting in which both occur changes what they mean. The same raised hand is a
+request for help in a classroom and a greeting in a kitchen; a thumbs-up given
+with an angry face is not approval. For a robot to respond appropriately it must
+therefore infer the intent behind a behaviour, not merely recognise the
+behaviour itself.
+
+Research on human--robot interaction (HRI) has responded by combining several
+perceptual cues. Recent systems fuse facial emotion with task context
+\citep{mamodiya2025adaptive}, gestures with speech \citep{chen2022real}, or
+several sensing modules within a single collaboration framework
+\citep{paul2023enhancing}, and surveys of the field describe a clear shift
+from single-cue recognisers towards multimodal, perception-driven decision
+making \citep{zhao2025multimodal}. These systems share a common design order.
+The set of intents a robot should understand is fixed first, from the point of
+view of the interaction designer, and the perception models are then trained
+to supply the evidence. Perception is treated as an input that is good enough,
+and accuracy is usually reported on footage close to the data the models were
+trained on.
+
+This paper argues that the order should be reversed. A label space defined
+independently of perception can ask the system for distinctions its sensors
+cannot reliably make, and when that happens no fusion model, however capable,
+can recover. We encountered exactly this failure while building a
+camera-based intent recognition system for a service robot. A long series of
+model-side improvements to the fusion stage each gained one or two percentage
+points and none overtook a hand-written rule cascade. Measuring the cue models
+on held-out footage, rather than on the footage they had been fine-tuned on,
+explained why. Facial emotion recognition, which appeared 97\,\% accurate on
+its own fine-tuning footage, was 76\,\% accurate on the held-out test
+recordings, and its most frequent errors fell precisely on boundaries the
+intent definitions relied on: disgust read as anger, and neutral read as sad.
+Body-motion recognition was correct for only 43.5\,\% of the clips it had not
+been fine-tuned on. The intent vocabulary was, in effect, asking the
+perception stack for information it did not have.
+
+We therefore propose \emph{perception-aware intent design}: the reliability
+of each perceptual cue is measured on held-out data first, and the intent
+vocabulary is then defined so that every decision rests on distinctions the
+cues can actually make. We apply the approach to a system that reads four cues
+from a single ordinary camera --- facial emotion, hand gesture, body motion and
+the scene --- and maps them onto nine actionable intents and eleven robot
+responses. Intents are keyed on the most reliable cue (gesture), emotion is
+grouped into superclasses whose internal confusions no longer change the
+outcome, the unreliable motion cue is removed from the decision, and the scene
+acts as a modifier. A self-attention fusion model then combines the cues while
+excluding any cue that is unobserved, and a safety-gated policy turns the
+inferred intent into a robot action, stopping immediately whenever an
+emergency becomes likely. The complete pipeline is designed to run on an
+embedded edge device so that no video leaves the robot.
+
+On 773 held-out recorded test clips, the fusion model reaches 82.0\,\%
+accuracy against 76.5\,\% for a rule cascade operating on the same perceived
+cues (McNemar exact $p = 1.7 \times 10^{-7}$). It detects 36 of 38
+emergencies (F1 0.818 against 0.565 for the rules), resolves conflicting cues
+such as a sarcastic thumbs-up more accurately, degrades more gracefully when a
+cue is missing, and outperforms the rules for each of the four participants held out in a
+leave-one-actor-out analysis. Just as importantly, a set of controlled
+ablations shows where these gains come from. Redesigning the intent vocabulary
+around measured reliability contributes 6.7 percentage points on its own,
+whereas the choice of fusion architecture does not matter among modern
+alternatives: our model is statistically tied with cross-attention and
+low-rank fusion. The lesson for designers of interactive robots is that the
+interaction vocabulary, not the learning machinery, is the decisive design
+decision.
+
+This paper makes four contributions:
+\begin{enumerate}
+  \item A \emph{perception-aware design method} for robot intent vocabularies,
+        which grounds every intent boundary in the measured, held-out
+        reliability of the perceptual cues, together with evidence that
+        evaluating cue models on their own fine-tuning footage inflates
+        their apparent accuracy enough to mislead design decisions.
+  \item A \emph{multimodal intent corpus} of 2,869 recorded clips covering 62
+        designed interaction scenarios in two environments, performed by ten
+        participants and annotated for all four cues, in which test scenarios
+        contain cue combinations that are absent from training.
+  \item A \emph{robust fusion approach} that combines combination-coverage
+        training with selective cue dropout and explicit masking of missing
+        cues, evaluated against a rule baseline, three single-cue baselines and
+        seven alternative fusion methods under conflicting, missing and
+        degraded cues.
+  \item An \emph{end-to-end interactive system} with a safety-gated action
+        policy, designed for and exported to an embedded edge device.
+\end{enumerate}
+
+The remainder of the paper is organised as follows.
+Section~\ref{sec:related} reviews related work. Section~\ref{sec:system}
+describes the system and its cue models, and Section~\ref{sec:dataset} the
+corpus. Section~\ref{sec:taxonomy} presents the perception-aware design of the
+intent vocabulary and Section~\ref{sec:fusion} the fusion model.
+Sections~\ref{sec:evaluation} and~\ref{sec:results} report the evaluation
+design and results, Section~\ref{sec:deployment} the deployment on an edge
+device, and Section~\ref{sec:discussion} discusses implications and
+limitations before Section~\ref{sec:conclusion} concludes.

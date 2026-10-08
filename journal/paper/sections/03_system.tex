@@ -1,0 +1,5 @@
+\section{System overview}\label{sec:system}
+% Pipeline figure: camera -> Holistic/face -> 4 cue models -> fusion -> safety-gated policy -> action.
+% Cue models (frozen): MobileNetV2 emotion (7 cls), TCN gesture (8 cls, 185-dim, 32-frame window), CLIP zero-shot scene (5 cls), LSTM motion (4 cls; measured, excluded).
+% Streaming: 8-frame stride (~3.75 Hz), time-based windows, smoothing + hysteresis, emergency bypass.
+	odo{System overview.}

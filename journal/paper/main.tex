@@ -1,0 +1,73 @@
+%% Manuscript for the International Journal of Human-Computer Studies (Elsevier).
+%% Built on elsarticle-template-harv.tex: author-year citations, as the journal
+%% guide requires. Build: pdflatex main -> bibtex main -> pdflatex main (x2).
+
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{lineno}
+\usepackage[hidelinks]{hyperref}
+
+%% Placeholder marker for facts that must come from the authors or a pending
+%% experiment. Every \todo must be resolved before submission.
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\journal{International Journal of Human-Computer Studies}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Designing around what robots can perceive: perception-aware multimodal
+intent recognition for service robots}
+
+\author[aff1]{\todo{Author 1}\corref{cor1}}
+\ead{corresponding.author@example.com}% TODO: real email
+\author[aff1]{\todo{Author 2}}
+\cortext[cor1]{Corresponding author.}
+
+\affiliation[aff1]{organization={\todo{Department, University}},
+            city={\todo{City}},
+            country={Sri Lanka}}
+
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+\begin{highlights}
+\input{sections/00_highlights}
+\end{highlights}
+
+\begin{keyword}
+Human--robot interaction \sep Multimodal interaction \sep Intent recognition
+\sep Affective computing \sep Gesture recognition \sep Edge AI
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_system}
+\input{sections/04_dataset}
+\input{sections/05_taxonomy}
+\input{sections/06_fusion}
+\input{sections/07_evaluation}
+\input{sections/08_results}
+\input{sections/09_deployment}
+\input{sections/10_discussion}
+\input{sections/11_conclusion}
+
+\input{sections/12_declarations}
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\end{document}

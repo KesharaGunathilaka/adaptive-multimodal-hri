@@ -56,3 +56,14 @@ pitch_video/_build*/
 # Annotation kit: clips are large; the answer key must not reach annotators
 results/fusion_v2/annotation_kit/videos/
 results/fusion_v2/annotation_kit/KEY_do_not_share.csv
+
+# LaTeX build artefacts (journal paper)
+journal/paper/*.aux
+journal/paper/*.log
+journal/paper/*.bbl
+journal/paper/*.blg
+journal/paper/*.out
+journal/paper/*.spl
+journal/paper/*.synctex.gz
+journal/paper/*.fls
+journal/paper/*.fdb_latexmk
