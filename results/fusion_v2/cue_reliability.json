@@ -1,0 +1,273 @@
+{
+  "emotion": {
+    "accuracy": 0.8821339950372209,
+    "ci": [
+      0.8580390150309773,
+      0.9026035600108582
+    ],
+    "n": 806,
+    "per_class": {
+      "Surprise": {
+        "n": 0,
+        "recall": NaN,
+        "precision": 0.0
+      },
+      "Fear": {
+        "n": 48,
+        "recall": 1.0,
+        "precision": 0.6666666666666666
+      },
+      "Disgust": {
+        "n": 152,
+        "recall": 0.8552631578947368,
+        "precision": 0.9629629629629629
+      },
+      "Happy": {
+        "n": 66,
+        "recall": 0.9848484848484849,
+        "precision": 0.8125
+      },
+      "Sad": {
+        "n": 243,
+        "recall": 0.8888888888888888,
+        "precision": 0.8925619834710744
+      },
+      "Anger": {
+        "n": 139,
+        "recall": 0.9928057553956835,
+        "precision": 0.8571428571428571
+      },
+      "Neutral": {
+        "n": 158,
+        "recall": 0.7215189873417721,
+        "precision": 0.991304347826087
+      }
+    },
+    "superclass_accuracy": 0.9057071960297767,
+    "top_confusions": [
+      {
+        "true": "Neutral",
+        "pred": "Sad",
+        "n": 23,
+        "rate": 0.14556962025316456
+      },
+      {
+        "true": "Disgust",
+        "pred": "Anger",
+        "n": 19,
+        "rate": 0.125
+      },
+      {
+        "true": "Sad",
+        "pred": "Happy",
+        "n": 13,
+        "rate": 0.053497942386831275
+      },
+      {
+        "true": "Neutral",
+        "pred": "Fear",
+        "n": 13,
+        "rate": 0.08227848101265822
+      },
+      {
+        "true": "Sad",
+        "pred": "Fear",
+        "n": 10,
+        "rate": 0.0411522633744856
+      },
+      {
+        "true": "Disgust",
+        "pred": "Sad",
+        "n": 3,
+        "rate": 0.019736842105263157
+      },
+      {
+        "true": "Neutral",
+        "pred": "Disgust",
+        "n": 3,
+        "rate": 0.0189873417721519
+      },
+      {
+        "true": "Sad",
+        "pred": "Disgust",
+        "n": 2,
+        "rate": 0.00823045267489712
+      }
+    ],
+    "merge_gains": {
+      "alarm": 0.0,
+      "hostile": 0.023573200992555776
+    }
+  },
+  "gesture": {
+    "accuracy": 0.998769987699877,
+    "ci": [
+      0.9930657070723797,
+      0.9997828452050755
+    ],
+    "n": 813,
+    "per_class": {
+      "idle": {
+        "n": 256,
+        "recall": 1.0,
+        "precision": 0.9961089494163424
+      },
+      "wave": {
+        "n": 149,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "point": {
+        "n": 96,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "thumbs_down": {
+        "n": 171,
+        "recall": 0.9941520467836257,
+        "precision": 1.0
+      },
+      "beckoning": {
+        "n": 51,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "raise_hand": {
+        "n": 42,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "both_hands_up": {
+        "n": 48,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    "superclass_accuracy": 0.998769987699877,
+    "top_confusions": [
+      {
+        "true": "thumbs_down",
+        "pred": "idle",
+        "n": 1,
+        "rate": 0.005847953216374269
+      }
+    ],
+    "merge_gains": {
+      "summon": 0.0
+    }
+  },
+  "motion": {
+    "accuracy": 0.4347319347319347,
+    "ci": [
+      0.40192521561404315,
+      0.4681205097257408
+    ],
+    "n": 858,
+    "per_class": {
+      "sitting": {
+        "n": 236,
+        "recall": 0.6991525423728814,
+        "precision": 0.7746478873239436
+      },
+      "standing": {
+        "n": 375,
+        "recall": 0.23466666666666666,
+        "precision": 0.4583333333333333
+      },
+      "walking": {
+        "n": 146,
+        "recall": 0.7191780821917808,
+        "precision": 0.3017241379310345
+      },
+      "stepping_back": {
+        "n": 101,
+        "recall": 0.1485148514851485,
+        "precision": 0.14285714285714285
+      }
+    },
+    "superclass_accuracy": 0.506993006993007,
+    "top_confusions": [
+      {
+        "true": "standing",
+        "pred": "walking",
+        "n": 165,
+        "rate": 0.44
+      },
+      {
+        "true": "standing",
+        "pred": "stepping_back",
+        "n": 84,
+        "rate": 0.224
+      },
+      {
+        "true": "stepping_back",
+        "pred": "standing",
+        "n": 54,
+        "rate": 0.5346534653465347
+      },
+      {
+        "true": "sitting",
+        "pred": "walking",
+        "n": 47,
+        "rate": 0.19915254237288135
+      },
+      {
+        "true": "standing",
+        "pred": "sitting",
+        "n": 38,
+        "rate": 0.10133333333333333
+      },
+      {
+        "true": "stepping_back",
+        "pred": "walking",
+        "n": 31,
+        "rate": 0.3069306930693069
+      },
+      {
+        "true": "walking",
+        "pred": "standing",
+        "n": 26,
+        "rate": 0.1780821917808219
+      },
+      {
+        "true": "sitting",
+        "pred": "standing",
+        "n": 24,
+        "rate": 0.1016949152542373
+      }
+    ],
+    "merge_gains": {
+      "static": 0.07226107226107226
+    }
+  },
+  "context": {
+    "accuracy": 0.972027972027972,
+    "ci": [
+      0.9587157860361087,
+      0.9811320932029531
+    ],
+    "n": 858,
+    "per_class": {
+      "classroom": {
+        "n": 338,
+        "recall": 1.0,
+        "precision": 0.9337016574585635
+      },
+      "kitchen": {
+        "n": 520,
+        "recall": 0.9538461538461539,
+        "precision": 1.0
+      }
+    },
+    "superclass_accuracy": 0.972027972027972,
+    "top_confusions": [
+      {
+        "true": "kitchen",
+        "pred": "classroom",
+        "n": 24,
+        "rate": 0.046153846153846156
+      }
+    ],
+    "merge_gains": {}
+  }
+}

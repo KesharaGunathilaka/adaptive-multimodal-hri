@@ -1,0 +1,62 @@
+{
+  "v3": {
+    "arm": "v3",
+    "desc": "original rubric: 4 cues, fine emotion, anger/disgust split",
+    "n_combos": 448,
+    "n_synth": 23744,
+    "fusion": 0.7623906705539358,
+    "fusion_f1": 0.7238956409824211,
+    "rules": 0.7653061224489796,
+    "ceiling": 0.9518950437317785,
+    "seed_mean": 0.755393586005831,
+    "seed_std": 0.014905916071328535
+  },
+  "v4": {
+    "arm": "v4",
+    "desc": "ours: gesture-first, superclasses, no motion",
+    "n_combos": 80,
+    "n_synth": 24000,
+    "fusion": 0.8294460641399417,
+    "fusion_f1": 0.8009600954470257,
+    "rules": 0.7886297376093294,
+    "ceiling": 0.9402332361516035,
+    "seed_mean": 0.8256559766763848,
+    "seed_std": 0.008678061846144138
+  },
+  "v4-emosplit": {
+    "arm": "v4-emosplit",
+    "desc": "revert F07/F08 to the anger-vs-disgust split",
+    "n_combos": 80,
+    "n_synth": 24000,
+    "fusion": 0.7259475218658892,
+    "fusion_f1": 0.6982848187838884,
+    "rules": 0.7696793002915452,
+    "ceiling": 0.9256559766763849,
+    "seed_mean": 0.7215743440233237,
+    "seed_std": 0.00734670738679543
+  },
+  "v4-finealarm": {
+    "arm": "v4-finealarm",
+    "desc": "revert alarm superclass: only Fear triggers F02",
+    "n_combos": 80,
+    "n_synth": 24000,
+    "fusion": 0.8323615160349854,
+    "fusion_f1": 0.8000805957339856,
+    "rules": 0.782798833819242,
+    "ceiling": 0.9402332361516035,
+    "seed_mean": 0.8294460641399418,
+    "seed_std": 0.008624023007433828
+  },
+  "v4-withmotion": {
+    "arm": "v4-withmotion",
+    "desc": "re-admit motion as a discriminator",
+    "n_combos": 320,
+    "n_synth": 24000,
+    "fusion": 0.8119533527696793,
+    "fusion_f1": 0.7812231031693746,
+    "rules": 0.7798833819241983,
+    "ceiling": 0.9650145772594753,
+    "seed_mean": 0.8055393586005831,
+    "seed_std": 0.019872178644841948
+  }
+}
